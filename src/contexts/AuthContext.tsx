@@ -40,7 +40,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (response.ok) {
             const roleData = await response.json();
             setAuthUser(roleData);
+          } else if (response.status === 404) {
+            // User doesn't exist in database - try to sync them
+            console.log('User not found in database, attempting to sync...', firebaseUser.uid);
+            try {
+              const syncResponse = await fetch('/api/auth/sync-user', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  uid: firebaseUser.uid,
+                  email: firebaseUser.email,
+                  role: 'student', // Default to student
+                }),
+              });
+
+              if (syncResponse.ok) {
+                const syncData = await syncResponse.json();
+                console.log('User synced successfully:', syncData);
+                
+                // Retry fetching user role after sync (with a small delay to ensure DB is updated)
+                await new Promise(resolve => setTimeout(resolve, 100));
+                const retryResponse = await fetch(`/api/auth/user-role?uid=${firebaseUser.uid}`);
+                if (retryResponse.ok) {
+                  const roleData = await retryResponse.json();
+                  setAuthUser(roleData);
+                } else {
+                  console.error('Failed to fetch user role after sync:', await retryResponse.text());
+                  setAuthUser(null);
+                }
+              } else {
+                const errorData = await syncResponse.json().catch(() => ({ error: 'Unknown error' }));
+                console.error('Failed to sync user:', errorData);
+                setAuthUser(null);
+              }
+            } catch (syncError) {
+              console.error('Error syncing user to database:', syncError);
+              setAuthUser(null);
+            }
           } else {
+            console.error('Unexpected error fetching user role:', response.status, await response.text().catch(() => ''));
             setAuthUser(null);
           }
         } catch (error) {

@@ -37,7 +37,32 @@ export function SignupForm() {
     setLoading(true);
 
     try {
-      await signUp(email, password);
+      // Create Firebase user
+      const userCredential = await signUp(email, password);
+      const firebaseUser = userCredential.user;
+
+      // Sync user to database (create Student record by default)
+      try {
+        const syncResponse = await fetch('/api/auth/sync-user', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            uid: firebaseUser.uid,
+            email: firebaseUser.email,
+            role: 'student', // Default to student, can be changed later
+          }),
+        });
+
+        if (!syncResponse.ok) {
+          const syncError = await syncResponse.json();
+          console.error('Error syncing user to database:', syncError);
+          // Don't fail signup if sync fails - user can be synced later
+        }
+      } catch (syncErr) {
+        console.error('Error calling sync-user endpoint:', syncErr);
+        // Continue even if sync fails
+      }
+
       router.push('/dashboard');
     } catch (err: any) {
       setError(err.message || 'Failed to create account');
