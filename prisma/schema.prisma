@@ -1,0 +1,611 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model School {
+  id                String       @id @default(cuid())
+  name              String
+  airportCode       String       @unique // e.g., "KAUS"
+  latitude          Float
+  longitude         Float
+  timezone          String       // e.g., "America/Chicago"
+  phone             String?
+  email             String?
+  address           String?
+  weatherApiEnabled Boolean      @default(false) // Toggle for WeatherAPI.com
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  
+  students          Student[]
+  instructors       Instructor[]
+  aircraft          Aircraft[]
+  flights           Flight[]
+  
+  @@index([airportCode])
+}
+
+enum TrainingLevel {
+  EARLY_STUDENT      // 0-10 hours
+  MID_STUDENT        // 10-30 hours
+  ADVANCED_STUDENT   // 30+ hours, pre-solo
+  PRIVATE_PILOT      // Has private certificate
+  INSTRUMENT_RATED   // Has instrument rating
+  COMMERCIAL_PILOT   // Has commercial certificate
+}
+
+enum TrainingStage {
+  STAGE_1_PRE_SOLO
+  STAGE_2_SOLO_XC
+  STAGE_3_CHECKRIDE_PREP
+}
+
+model Student {
+  id                String         @id @default(cuid())
+  schoolId          String
+  school            School         @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  
+  // User info
+  email             String         @unique
+  firstName         String
+  lastName          String
+  phone             String
+  firebaseUid       String         @unique
+  
+  // Training info
+  trainingLevel     TrainingLevel  @default(EARLY_STUDENT)
+  currentStage      TrainingStage  @default(STAGE_1_PRE_SOLO)
+  currentLesson     Int            @default(1)
+  totalFlightHours  Float          @default(0)
+  soloHours         Float          @default(0)
+  crossCountryHours Float          @default(0)
+  nightHours        Float          @default(0)
+  instrumentHours   Float          @default(0)
+  
+  // Currency tracking
+  lastFlightDate    DateTime?
+  daysSinceLastFlight Int?
+  soloCurrentUntil  DateTime?      // 90-day solo currency
+  
+  // Availability (JSON array of weekly schedule)
+  availability      Json?          // e.g., [{day: "MON", start: "09:00", end: "17:00"}]
+  
+  // Preferences
+  preferredInstructorId String?
+  preferredInstructor   Instructor? @relation("PreferredInstructor", fields: [preferredInstructorId], references: [id])
+  
+  // Notification settings
+  emailNotifications    Boolean @default(true)
+  weatherAlerts         Boolean @default(true)
+  progressUpdates       Boolean @default(true)
+  
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  
+  flights           Flight[]
+  progress          StudentProgress[]
+  rescheduleRequests RescheduleRequest[]
+  notificationsSent Notification[] @relation("NotificationRecipient")
+  
+  @@index([schoolId])
+  @@index([email])
+  @@index([firebaseUid])
+  @@index([trainingLevel])
+  @@index([lastFlightDate])
+}
+
+model Instructor {
+  id                String    @id @default(cuid())
+  schoolId          String
+  school            School    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  
+  // User info
+  email             String    @unique
+  firstName         String
+  lastName          String
+  phone             String
+  firebaseUid       String    @unique
+  
+  // Credentials
+  certificateNumber String
+  certificateExpiry DateTime?
+  cfiExpiry         DateTime?
+  cfiiRating        Boolean   @default(false) // Instrument instructor
+  meiRating         Boolean   @default(false) // Multi-engine instructor
+  
+  // Currency
+  lastInstructionalFlight DateTime?
+  flightReviewDue   DateTime?
+  instrumentCurrent Boolean   @default(false)
+  
+  // Availability (JSON array)
+  availability      Json?     // Weekly schedule
+  
+  // Stats
+  totalStudents     Int       @default(0)
+  activeStudents    Int       @default(0)
+  totalInstructionalHours Float @default(0)
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  flights           Flight[]
+  preferredByStudents Student[] @relation("PreferredInstructor")
+  
+  @@index([schoolId])
+  @@index([email])
+  @@index([firebaseUid])
+}
+
+model Admin {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  firstName   String
+  lastName    String
+  firebaseUid String   @unique
+  role        String   @default("admin") // "admin", "super_admin"
+  schoolId    String?  // null = super admin (all schools)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([email])
+  @@index([firebaseUid])
+}
+
+enum AircraftCategory {
+  SINGLE_ENGINE_LAND
+  MULTI_ENGINE_LAND
+  SINGLE_ENGINE_SEA
+  ROTORCRAFT
+}
+
+model AircraftType {
+  id              String           @id @default(cuid())
+  make            String           // "Cessna"
+  model           String           // "172"
+  variant         String?          // "Skyhawk"
+  category        AircraftCategory
+  
+  // Performance limits
+  crosswindLimit  Int              // knots
+  maxWindSpeed    Int              // knots
+  hasDeicing      Boolean          @default(false)
+  isComplex       Boolean          @default(false) // Retractable gear
+  isHighPerf      Boolean          @default(false) // >200hp
+  isTailwheel     Boolean          @default(false)
+  
+  // Weather capabilities
+  vfrOnly         Boolean          @default(true)
+  imcCapable      Boolean          @default(false)
+  icingApproved   Boolean          @default(false)
+  
+  createdAt       DateTime         @default(now())
+  
+  aircraft        Aircraft[]
+}
+
+enum AircraftStatus {
+  AVAILABLE
+  IN_FLIGHT
+  MAINTENANCE
+  GROUNDED
+}
+
+model Aircraft {
+  id              String         @id @default(cuid())
+  schoolId        String
+  school          School         @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  
+  tailNumber      String         @unique // "N12345"
+  aircraftTypeId  String
+  aircraftType    AircraftType   @relation(fields: [aircraftTypeId], references: [id])
+  
+  status          AircraftStatus @default(AVAILABLE)
+  
+  // Hobbs meter (flight time tracking)
+  hobbsTime       Float          @default(0)
+  
+  // Maintenance tracking
+  lastInspection  DateTime?
+  nextInspectionDue DateTime?
+  maintenanceUntil  DateTime?    // Grounded until this date
+  
+  // Scheduling
+  homeBase        String         // Airport code
+  
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  
+  flights         Flight[]
+  squawks         Squawk[]
+  
+  @@index([schoolId])
+  @@index([status])
+  @@index([tailNumber])
+}
+
+enum FlightStatus {
+  SCHEDULED
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  WEATHER_CANCELLED
+  MAINTENANCE_CANCELLED
+  STUDENT_CANCELLED
+  INSTRUCTOR_CANCELLED
+  RESCHEDULED
+}
+
+enum FlightType {
+  DUAL_INSTRUCTION
+  SOLO_SUPERVISED
+  SOLO_UNSUPERVISED
+  STAGE_CHECK
+  CHECKRIDE
+  DISCOVERY_FLIGHT
+  GROUND_SCHOOL
+}
+
+model Flight {
+  id                String       @id @default(cuid())
+  schoolId          String
+  school            School       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  
+  studentId         String
+  student           Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  
+  instructorId      String?
+  instructor        Instructor?  @relation(fields: [instructorId], references: [id], onDelete: SetNull)
+  
+  aircraftId        String
+  aircraft          Aircraft     @relation(fields: [aircraftId], references: [id], onDelete: Restrict)
+  
+  // Scheduling
+  scheduledStart    DateTime
+  scheduledEnd      DateTime
+  briefingStart     DateTime     // 30 min before flight
+  debriefEnd        DateTime     // 20 min after flight
+  
+  // Flight details
+  flightType        FlightType
+  lessonNumber      Int?         // Which lesson in syllabus
+  lessonTitle       String?
+  
+  // Locations
+  departureAirport  String       // "KAUS"
+  destinationAirport String?     // For cross-country
+  route             String?      // "KAUS-KHYI-KAUS"
+  
+  // Status
+  status            FlightStatus @default(SCHEDULED)
+  
+  // Weather override (instructor can approve marginal weather)
+  weatherOverride   Boolean      @default(false)
+  overrideReason    String?
+  overrideBy        String?      // instructorId
+  
+  // Actual times (filled after flight)
+  actualStart       DateTime?
+  actualEnd         DateTime?
+  flightTimeLogged  Float?       // Actual flight time in hours
+  
+  // Post-flight
+  objectives        Json?        // Array of lesson objectives
+  objectivesMet     Boolean?
+  instructorNotes   String?
+  studentNotes      String?
+  
+  // Relationships
+  weatherChecks     WeatherCheck[]
+  rescheduleRequests RescheduleRequest[]
+  notifications     Notification[]
+  
+  // Rescheduling tracking
+  rescheduledFromId String?      // Original flight if this is rescheduled
+  rescheduledFrom   Flight?      @relation("RescheduledFlights", fields: [rescheduledFromId], references: [id], onDelete: SetNull)
+  rescheduledTo     Flight[]     @relation("RescheduledFlights")
+  
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  
+  @@index([schoolId])
+  @@index([studentId])
+  @@index([instructorId])
+  @@index([aircraftId])
+  @@index([scheduledStart])
+  @@index([status])
+  @@index([flightType])
+}
+
+enum WeatherCheckResult {
+  SAFE
+  MARGINAL
+  UNSAFE
+}
+
+enum WeatherCheckType {
+  SCHEDULED_HOURLY
+  MANUAL_REFRESH
+  PRE_FLIGHT_BRIEFING
+  IN_FLIGHT_UPDATE
+}
+
+model WeatherCheck {
+  id          String             @id @default(cuid())
+  flightId    String
+  flight      Flight             @relation(fields: [flightId], references: [id], onDelete: Cascade)
+  
+  checkType   WeatherCheckType
+  checkTime   DateTime           @default(now())
+  
+  // Check parameters
+  location    String             // Airport code
+  latitude    Float
+  longitude   Float
+  
+  // Weather data (parsed from METAR)
+  rawMetar    String?
+  visibility  Float?             // Statute miles
+  ceiling     Int?               // Feet AGL
+  windSpeed   Int?               // Knots
+  windGust    Int?               // Knots
+  windDirection Int?             // Degrees
+  temperature Int?               // Celsius
+  conditions  String?            // "Clear", "Rain", "Thunderstorm"
+  
+  // Analysis
+  result      WeatherCheckResult
+  confidence  Int                // 0-100
+  reasons     Json               // Array of reason strings
+  
+  // Student-specific check
+  studentTrainingLevel TrainingLevel
+  requiredVisibility   Float
+  requiredCeiling      Int
+  maxWindSpeed         Int
+  
+  createdAt   DateTime           @default(now())
+  
+  weatherLog  WeatherLog?
+  
+  @@index([flightId])
+  @@index([checkTime])
+  @@index([result])
+}
+
+model WeatherLog {
+  id              String       @id @default(cuid())
+  weatherCheckId  String       @unique
+  weatherCheck    WeatherCheck @relation(fields: [weatherCheckId], references: [id], onDelete: Cascade)
+  
+  // Full weather API response (for debugging/analytics)
+  apiResponse     Json
+  apiSource       String       // "FAA", "WeatherAPI"
+  
+  createdAt       DateTime     @default(now())
+}
+
+enum RescheduleStatus {
+  PENDING_STUDENT
+  PENDING_INSTRUCTOR
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
+model RescheduleRequest {
+  id                String           @id @default(cuid())
+  flightId          String
+  flight            Flight           @relation(fields: [flightId], references: [id], onDelete: Cascade)
+  
+  studentId         String
+  student           Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  
+  // AI-generated options (JSON array)
+  suggestions       Json             // Array of 3 suggested time slots
+  aiReasoning       Json             // Explanation for each suggestion
+  
+  // Status
+  status            RescheduleStatus @default(PENDING_STUDENT)
+  
+  // Selected option
+  selectedOption    Int?             // Index 0-2 of suggestions array
+  selectedBy        String?          // "student" or "instructor"
+  
+  // Confirmation
+  studentConfirmedAt DateTime?
+  instructorConfirmedAt DateTime?
+  
+  // Result
+  newFlightId       String?          // If rescheduled successfully
+  rejectionReason   String?
+  
+  expiresAt         DateTime         // Auto-expire after 48 hours
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  
+  @@index([flightId])
+  @@index([studentId])
+  @@index([status])
+  @@index([expiresAt])
+}
+
+enum NotificationType {
+  WEATHER_ALERT
+  WEATHER_CONFLICT
+  RESCHEDULE_SUGGESTION
+  RESCHEDULE_CONFIRMED
+  FLIGHT_REMINDER
+  CURRENCY_WARNING
+  MAINTENANCE_ALERT
+  SQUAWK_REPORTED
+}
+
+enum NotificationChannel {
+  EMAIL
+  IN_APP
+  SMS
+}
+
+model Notification {
+  id          String            @id @default(cuid())
+  
+  recipientId String
+  recipient   Student           @relation("NotificationRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  
+  type        NotificationType
+  channel     NotificationChannel
+  
+  subject     String
+  message     String
+  
+  // Related entities
+  flightId    String?
+  flight      Flight?           @relation(fields: [flightId], references: [id], onDelete: SetNull)
+  
+  // Metadata
+  metadata    Json?             // Additional data specific to notification type
+  
+  // Delivery tracking
+  sentAt      DateTime?
+  deliveredAt DateTime?
+  readAt      DateTime?
+  failedAt    DateTime?
+  errorMessage String?
+  
+  createdAt   DateTime          @default(now())
+  
+  @@index([recipientId])
+  @@index([type])
+  @@index([sentAt])
+  @@index([readAt])
+}
+
+enum SquawkSeverity {
+  MINOR
+  MAJOR
+  GROUNDING
+}
+
+enum SquawkStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  DEFERRED
+}
+
+model Squawk {
+  id                String         @id @default(cuid())
+  aircraftId        String
+  aircraft          Aircraft       @relation(fields: [aircraftId], references: [id], onDelete: Cascade)
+  
+  reportedBy        String         // userId (student or instructor)
+  reportedAt        DateTime       @default(now())
+  
+  severity          SquawkSeverity
+  status            SquawkStatus   @default(OPEN)
+  
+  title             String
+  description       String
+  
+  // Impact
+  impactedFlightIds Json?          // Array of flight IDs that were cancelled
+  
+  // Resolution
+  assignedTo        String?        // Maintenance person ID
+  resolvedAt        DateTime?
+  resolutionNotes   String?
+  maintenanceLog    String?
+  
+  // Costs (optional)
+  estimatedCost     Float?
+  actualCost        Float?
+  
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  
+  @@index([aircraftId])
+  @@index([severity])
+  @@index([status])
+  @@index([reportedAt])
+}
+
+model LessonSyllabus {
+  id                String        @id @default(cuid())
+  
+  stage             TrainingStage
+  lessonNumber      Int
+  title             String
+  description       String
+  
+  objectives        Json          // Array of learning objectives
+  prerequisites     Json?         // Array of prior lesson numbers
+  
+  estimatedDuration Float         // Hours
+  groundTime        Float?        // Hours of ground instruction
+  flightTime        Float?        // Hours of flight time
+  
+  // Requirements
+  weatherMinimums   Json          // Specific weather requirements for this lesson
+  aircraftRequirement String?     // "any", "complex", "tailwheel"
+  
+  // Content
+  maneuvers         Json?         // Array of maneuvers to practice
+  references        Json?         // Study materials
+  
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  
+  progress          StudentProgress[]
+  
+  @@unique([stage, lessonNumber])
+  @@index([stage])
+}
+
+enum LessonStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  REPEAT_REQUIRED
+}
+
+model StudentProgress {
+  id                String        @id @default(cuid())
+  studentId         String
+  student           Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  
+  lessonId          String
+  lesson            LessonSyllabus @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  
+  status            LessonStatus  @default(NOT_STARTED)
+  
+  // Completion tracking
+  attemptCount      Int           @default(0)
+  completedDate     DateTime?
+  flightId          String?       // Flight where lesson was completed
+  
+  // Assessment
+  objectivesMet     Json?         // Which objectives were satisfactory
+  instructorNotes   String?
+  studentNotes      String?
+  
+  // Performance
+  satisfactory      Boolean?
+  needsReview       Boolean       @default(false)
+  
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  
+  @@unique([studentId, lessonId])
+  @@index([studentId])
+  @@index([status])
+}
+

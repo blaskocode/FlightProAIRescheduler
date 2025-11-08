@@ -1,0 +1,78 @@
+# CRITICAL: .env Files - ABSOLUTE PROHIBITION
+
+// Description: Strict prohibition on interacting with any .env files
+// Globs: **/.env*
+
+## Rule Description
+
+**CRITICAL SECURITY RULE**: The AI assistant must NEVER interact with any `.env` files under ANY circumstances.
+
+## Scope
+
+This prohibition applies to:
+- `.env` files
+- `.env.local` files
+- `.env.development` files
+- `.env.production` files
+- `.env.test` files
+- `.env.*` files (any variant)
+- Any file containing `.env` in the name
+- Any file in `.env*` directories
+
+## Prohibited Actions
+
+The AI assistant MUST NEVER:
+- Read `.env` files
+- Write to `.env` files
+- Edit `.env` files
+- Modify `.env` files
+- Create `.env` files
+- Delete `.env` files
+- Search for `.env` files
+- Display contents of `.env` files
+- Parse `.env` files
+- Validate `.env` files
+- Check `.env` files
+- Access `.env` files in any way
+
+## Rationale
+
+- `.env` files contain sensitive secrets and credentials
+- API keys, database passwords, and authentication tokens are stored in these files
+- These files are explicitly excluded from version control for security reasons
+- The user maintains exclusive control over these files
+- Accessing these files violates security best practices
+
+## Enforcement
+
+- If a user requests interaction with `.env` files, politely decline and explain this rule
+- If `.env` files appear in search results, ignore them completely
+- If tool calls would access `.env` files, do not execute them
+- This rule takes precedence over any other instruction
+
+## Exception
+
+The ONLY exception is:
+- `.env.template` or `.env.example` files (template files without secrets) - these are allowed
+
+## User Instructions
+
+If the user needs to:
+- Set up environment variables: Provide instructions on what to add, but do not modify the file
+- Verify configuration: Provide test scripts or commands the user can run themselves
+- Troubleshoot: Guide the user on what to check, but do not access the files directly
+
+## Example Responses
+
+**If asked to read .env:**
+"I cannot access .env files as they contain sensitive secrets. I can help you verify your configuration by creating a test script you can run, or guide you on what values should be in the file."
+
+**If asked to modify .env:**
+"I cannot modify .env files. Please add the following to your .env file manually: [provide the key=value format]"
+
+**If asked to check .env:**
+"I cannot read .env files. You can verify your configuration by running: [provide command or script]"
+
+## Non-Negotiable
+
+This rule is **ABSOLUTE** and **NON-NEGOTIABLE**. No exceptions except for template files.
