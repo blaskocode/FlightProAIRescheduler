@@ -16,6 +16,7 @@ export const maintenanceReminderQueue = new Queue('maintenance-reminder', { conn
 
 // Reschedule Expiration Queue
 export const rescheduleExpirationQueue = new Queue('reschedule-expiration', { connection });
+export const predictionGenerationQueue = new Queue('prediction-generation', { connection });
 
 // Notification Queue
 export const notificationQueue = new Queue('notification', { connection });

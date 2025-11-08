@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -10,6 +10,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Flight {
   id: string;
@@ -60,7 +61,7 @@ function ErrorDisplay({ error, onRetry }: { error: Error; onRetry: () => void })
 }
 
 // Empty state component
-function EmptyState() {
+function EmptyState({ onCreateTestFlights, creatingTestFlights }: { onCreateTestFlights?: () => void; creatingTestFlights?: boolean }) {
   return (
     <div className="rounded-lg border border-gray-200 bg-gray-50 p-12 text-center">
       <div className="mx-auto w-24 h-24 bg-gray-200 rounded-full mb-4 flex items-center justify-center">
@@ -79,14 +80,26 @@ function EmptyState() {
         </svg>
       </div>
       <h3 className="text-lg font-semibold text-gray-900 mb-2">No Flights Found</h3>
-      <p className="text-sm text-gray-600">
-        Try adjusting your filters or check back later for new flights.
+      <p className="text-sm text-gray-600 mb-4">
+        {onCreateTestFlights 
+          ? "You don't have any flights scheduled. Create test flights to get started."
+          : "Try adjusting your filters or check back later for new flights."}
       </p>
+      {onCreateTestFlights && (
+        <Button
+          onClick={onCreateTestFlights}
+          disabled={creatingTestFlights}
+          className="mt-2"
+        >
+          {creatingTestFlights ? 'Creating Test Flights...' : 'Create Test Flights (5 flights)'}
+        </Button>
+      )}
     </div>
   );
 }
 
 export function FlightList() {
+  const { user } = useAuth();
   const [flights, setFlights] = useState<Flight[]>([]);
   const [filteredFlights, setFilteredFlights] = useState<Flight[]>([]);
   const [loading, setLoading] = useState(true);
@@ -99,24 +112,41 @@ export function FlightList() {
   const [dateRange, setDateRange] = useState<'all' | 'today' | 'week' | 'month'>('all');
   const [sortBy, setSortBy] = useState<'date' | 'status' | 'aircraft'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [creatingTestFlights, setCreatingTestFlights] = useState(false);
 
-  useEffect(() => {
-    fetchFlights();
-  }, []);
+  const fetchFlights = useCallback(async () => {
+    if (!user) {
+      setError(new Error('Please log in to view flights'));
+      setLoading(false);
+      return;
+    }
 
-  useEffect(() => {
-    applyFilters();
-  }, [flights, statusFilter, aircraftFilter, instructorFilter, dateRange, sortBy, sortOrder]);
-
-  async function fetchFlights() {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch('/api/flights');
+      
+      // Get Firebase auth token
+      const token = await user.getIdToken();
+      
+      const response = await fetch('/api/flights', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
       if (!response.ok) {
-        throw new Error('Failed to fetch flights');
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('API Error:', response.status, errorData);
+        if (response.status === 401) {
+          throw new Error('Please log in to view flights');
+        }
+        if (response.status === 403) {
+          throw new Error('You do not have permission to view flights');
+        }
+        throw new Error(errorData.error || 'Failed to fetch flights');
       }
       const data = await response.json();
+      console.log('Fetched flights:', data.length, 'flights');
       setFlights(data);
     } catch (err: any) {
       setError(err);
@@ -124,7 +154,50 @@ export function FlightList() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      fetchFlights();
+    }
+  }, [user, fetchFlights]);
+
+  const createTestFlights = useCallback(async () => {
+    if (!user) return;
+    
+    try {
+      setCreatingTestFlights(true);
+      const token = await user.getIdToken();
+      
+      const response = await fetch('/api/flights/create-test', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || 'Failed to create test flights');
+      }
+      
+      const data = await response.json();
+      console.log('Created test flights:', data);
+      
+      // Refresh flights list
+      await fetchFlights();
+    } catch (err: any) {
+      setError(err);
+      console.error('Error creating test flights:', err);
+    } finally {
+      setCreatingTestFlights(false);
+    }
+  }, [user, fetchFlights]);
+
+  useEffect(() => {
+    applyFilters();
+  }, [flights, statusFilter, aircraftFilter, instructorFilter, dateRange, sortBy, sortOrder]);
 
   function applyFilters() {
     let filtered = [...flights];
@@ -199,14 +272,14 @@ export function FlightList() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Upcoming Flights</h2>
+      <h2 className="text-2xl font-bold">Upcoming Flights</h2>
         <Button onClick={fetchFlights} variant="outline" size="sm">
           Refresh
         </Button>
       </div>
 
-      {/* Filters */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 p-4 bg-gray-50 rounded-lg">
+      {/* Filters - Mobile optimized */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4 p-3 sm:p-4 bg-gray-50 rounded-lg">
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger>
             <SelectValue placeholder="Status" />
@@ -289,13 +362,16 @@ export function FlightList() {
           ))}
         </div>
       ) : filteredFlights.length === 0 ? (
-        <EmptyState />
+        <EmptyState 
+          onCreateTestFlights={flights.length === 0 ? createTestFlights : undefined}
+          creatingTestFlights={creatingTestFlights}
+        />
       ) : (
         <div className="grid gap-4">
           {filteredFlights.map((flight) => (
             <div
               key={flight.id}
-              className="rounded-lg border bg-white p-4 shadow-sm hover:shadow-md transition-shadow"
+              className="rounded-lg border bg-white p-3 sm:p-4 shadow-sm hover:shadow-md active:shadow-lg transition-shadow touch-manipulation"
             >
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="flex-1">

@@ -52,10 +52,11 @@ export function SelectTrigger({ children, className, ...props }: React.HTMLAttri
   return (
     <button
       type="button"
-      className={cn(
-        'flex h-10 w-full items-center justify-between rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
-        className
-      )}
+            className={cn(
+              'flex h-10 w-full items-center justify-between rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
+              'min-h-[44px] touch-manipulation', // Mobile optimization
+              className
+            )}
       onClick={() => context.setOpen(!context.open)}
       {...props}
     >

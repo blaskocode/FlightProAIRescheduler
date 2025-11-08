@@ -1,6 +1,7 @@
 import { Worker } from 'bullmq';
-import { connection, weatherCheckQueue, currencyCheckQueue, maintenanceReminderQueue, rescheduleExpirationQueue } from './queues';
+import { connection, weatherCheckQueue, currencyCheckQueue, maintenanceReminderQueue, rescheduleExpirationQueue, predictionGenerationQueue } from './queues';
 import { processWeatherCheck, WeatherCheckJobData } from './weather-check.job';
+import { generatePredictionsForUpcomingFlights } from './prediction-generation.job';
 import { prisma } from '@/lib/prisma';
 import { sendNotification } from '@/lib/services/notification-service';
 
@@ -284,5 +285,25 @@ rescheduleExpirationWorker.on('completed', (job) => {
 
 rescheduleExpirationWorker.on('failed', (job, err) => {
   console.error(`Reschedule expiration job ${job?.id} failed:`, err);
+});
+
+// Prediction Generation Worker
+export const predictionGenerationWorker = new Worker(
+  'prediction-generation',
+  async (job) => {
+    return generatePredictionsForUpcomingFlights();
+  },
+  {
+    connection,
+    concurrency: 1, // Run one at a time to avoid overwhelming the system
+  }
+);
+
+predictionGenerationWorker.on('completed', (job) => {
+  console.log(`Prediction generation job ${job.id} completed`);
+});
+
+predictionGenerationWorker.on('failed', (job, err) => {
+  console.error(`Prediction generation job ${job?.id} failed:`, err);
 });
 

@@ -2,6 +2,7 @@ import { Resend } from 'resend';
 import { ref, push } from 'firebase/database';
 import { database } from '@/lib/firebase';
 import { prisma } from '@/lib/prisma';
+import { sendSMS, generateSMSMessage } from './sms-service';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -37,8 +38,73 @@ export async function sendNotification(data: NotificationData) {
           subject: data.subject,
           html: data.message,
         });
+        
+        // Save email notification
+        await prisma.notification.create({
+          data: {
+            recipientId: data.recipientId,
+            type: data.type,
+            channel: 'EMAIL',
+            subject: data.subject,
+            message: data.message,
+            flightId: data.flightId,
+            metadata: data.metadata,
+            sentAt: new Date(),
+          },
+        });
       } catch (error) {
         console.error('Error sending email:', error);
+      }
+    }
+
+    // Send SMS if enabled and opted in
+    if (student.smsNotifications && student.smsOptIn && student.phoneVerified && student.phone) {
+      try {
+        const smsMessage = generateSMSMessage(data.type, {
+          studentName: student.firstName,
+          ...data.metadata,
+        });
+
+        const smsResult = await sendSMS({
+          to: student.phone,
+          message: smsMessage,
+          recipientId: data.recipientId,
+          notificationType: data.type,
+        });
+
+        if (smsResult.success) {
+          // Save SMS notification
+          await prisma.notification.create({
+            data: {
+              recipientId: data.recipientId,
+              type: data.type,
+              channel: 'SMS',
+              subject: data.subject,
+              message: smsMessage,
+              flightId: data.flightId,
+              metadata: data.metadata,
+              sentAt: new Date(),
+            },
+          });
+
+          // Track SMS cost
+          if (smsResult.cost && smsResult.messageId) {
+            await prisma.sMSCost.create({
+              data: {
+                schoolId: student.schoolId,
+                recipientId: data.recipientId,
+                phoneNumber: student.phone,
+                messageId: smsResult.messageId,
+                cost: smsResult.cost,
+                notificationType: data.type,
+              },
+            });
+          }
+        } else {
+          console.error('Error sending SMS:', smsResult.error);
+        }
+      } catch (error) {
+        console.error('Error sending SMS:', error);
       }
     }
 
@@ -60,20 +126,6 @@ export async function sendNotification(data: NotificationData) {
       }
     }
 
-    // Save to database
-    await prisma.notification.create({
-      data: {
-        recipientId: data.recipientId,
-        type: data.type,
-        channel: 'EMAIL',
-        subject: data.subject,
-        message: data.message,
-        flightId: data.flightId,
-        metadata: data.metadata,
-        sentAt: new Date(),
-      },
-    });
-
     return { success: true };
   } catch (error) {
     console.error('Error sending notification:', error);
@@ -88,7 +140,19 @@ export function generateWeatherConflictEmail(data: {
   student: any;
   flight: any;
   weatherCheck: any;
+  forecastConfidence?: {
+    confidence: number;
+    tier: 'HIGH' | 'MEDIUM' | 'LOW';
+    trend: 'IMPROVING' | 'WORSENING' | 'STABLE';
+    recommendation: 'AUTO_RESCHEDULE' | 'ALERT' | 'MONITOR';
+  };
 }): NotificationData {
+  const confidenceInfo = data.forecastConfidence
+    ? `<br/><strong>Forecast Confidence:</strong> ${data.forecastConfidence.confidence}% (${data.forecastConfidence.tier})<br/>
+       <strong>Trend:</strong> ${data.forecastConfidence.trend}<br/>
+       <strong>Recommendation:</strong> ${data.forecastConfidence.recommendation === 'AUTO_RESCHEDULE' ? 'Auto-reschedule suggested' : data.forecastConfidence.recommendation === 'ALERT' ? 'Monitor closely' : 'Continue monitoring'}`
+    : '';
+
   return {
     recipientId: data.student.id,
     type: 'WEATHER_CONFLICT',
@@ -102,6 +166,7 @@ export function generateWeatherConflictEmail(data: {
         Date: ${new Date(data.flight.scheduledStart).toLocaleString()}<br/>
         Aircraft: ${data.flight.aircraft?.tailNumber || 'TBD'}<br/>
         Instructor: ${data.flight.instructor ? `${data.flight.instructor.firstName} ${data.flight.instructor.lastName}` : 'TBD'}<br/>
+        ${confidenceInfo}
         Lesson: ${data.flight.lessonTitle || 'Flight Lesson'}
       </div>
       <div style="background: #fff3cd; padding: 20px; margin: 20px 0;">

@@ -31,8 +31,31 @@ export async function processWeatherCheck(job: Job<WeatherCheckJobData>) {
       throw new Error(`Flight ${flightId} not found`);
     }
 
-    // 2. Get weather data
-    const weather = await fetchFAAWeather(flight.departureAirport);
+    // 2. Get weather data (with schoolId for provider selection)
+    // For cross-country flights, check route weather instead
+    let weather;
+    let routeWeatherResult = null;
+    
+    if (flight.route && flight.route.includes('-')) {
+      // Cross-country flight - check route weather
+      const { checkRouteWeather } = await import('@/lib/services/route-weather-service');
+      routeWeatherResult = await checkRouteWeather(
+        flight.route,
+        flight.schoolId,
+        getWeatherMinimums(
+          flight.student.trainingLevel,
+          flight.aircraft.aircraftType,
+          flight.flightType
+        )
+      );
+      
+      // Use departure airport weather for compatibility with existing code
+      weather = await fetchFAAWeather(flight.departureAirport, flight.schoolId);
+      
+    } else {
+      // Local flight - check departure airport only
+      weather = await fetchFAAWeather(flight.departureAirport, flight.schoolId);
+    }
     
     if (!weather) {
       throw new Error(`Weather data not available for ${flight.departureAirport}`);
@@ -45,13 +68,38 @@ export async function processWeatherCheck(job: Job<WeatherCheckJobData>) {
       flight.flightType
     );
 
-    // 4. Check safety
-    const checkResult = checkWeatherSafety(weather, minimums);
+    // 4. Check safety (use route weather result if available, otherwise check departure)
+    let checkResult: any;
+    if (routeWeatherResult) {
+      // Use route weather result
+      checkResult = {
+        result: routeWeatherResult.overallResult,
+        confidence: routeWeatherResult.confidence,
+        reasons: routeWeatherResult.reasons,
+      };
+    } else {
+      // Local flight - check departure airport only
+      checkResult = checkWeatherSafety(weather, minimums);
+    }
 
     // 5. Get airport coordinates
     const coordinates = await getAirportCoordinates(flight.departureAirport);
 
-    // 6. Save weather check
+    // 6. Calculate forecast confidence for proactive alerts
+    let forecastConfidence = null;
+    try {
+      const { calculateForecastConfidence } = await import('@/lib/services/forecast-confidence-service');
+      forecastConfidence = await calculateForecastConfidence(
+        flightId,
+        weather,
+        flight.scheduledStart
+      );
+    } catch (error) {
+      console.error('Error calculating forecast confidence:', error);
+      // Continue without confidence data
+    }
+
+    // 7. Save weather check
     const weatherCheck = await prisma.weatherCheck.create({
       data: {
         flightId: flight.id,
@@ -60,7 +108,16 @@ export async function processWeatherCheck(job: Job<WeatherCheckJobData>) {
         location: flight.departureAirport,
         latitude: coordinates.latitude,
         longitude: coordinates.longitude,
-        rawMetar: JSON.stringify(weather),
+        rawMetar: JSON.stringify({
+          departure: weather,
+          route: routeWeatherResult ? {
+            route: routeWeatherResult.route,
+            waypoints: routeWeatherResult.waypoints,
+            overallResult: routeWeatherResult.overallResult,
+            unsafeWaypoints: routeWeatherResult.unsafeWaypoints,
+            marginalWaypoints: routeWeatherResult.marginalWaypoints,
+          } : null,
+        }),
         visibility: weather.visibility.value,
         ceiling: weather.clouds[0]?.altitude || 99999,
         windSpeed: weather.wind.speed,
@@ -78,8 +135,11 @@ export async function processWeatherCheck(job: Job<WeatherCheckJobData>) {
       },
     });
 
-    // 7. If unsafe, trigger AI rescheduling
-    if (checkResult.result === 'UNSAFE') {
+    // 8. If unsafe OR high confidence forecast suggests reschedule, trigger AI rescheduling
+    const shouldReschedule = checkResult.result === 'UNSAFE' || 
+      (forecastConfidence && forecastConfidence.recommendation === 'AUTO_RESCHEDULE' && forecastConfidence.tier === 'HIGH');
+    
+    if (shouldReschedule) {
       // Update flight status
       await prisma.flight.update({
         where: { id: flightId },
@@ -105,11 +165,12 @@ export async function processWeatherCheck(job: Job<WeatherCheckJobData>) {
           },
         });
 
-        // Send notification to student
+        // Send notification to student (with forecast confidence if available)
         const emailData = generateWeatherConflictEmail({
           student: flight.student,
           flight,
           weatherCheck,
+          forecastConfidence: forecastConfidence || undefined,
         });
 
         await sendNotification({

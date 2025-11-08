@@ -126,6 +126,11 @@ export async function generateRescheduleSuggestions(
       'Ensure aircraft availability',
       `Consider student currency (last flight ${flight.student.lastFlightDate ? new Date(flight.student.lastFlightDate).toLocaleDateString() : 'never'})`,
     ],
+    routeWeather: flight.route ? {
+      route: flight.route,
+      // Route weather will be checked separately and added to context if available
+      note: 'Route weather should be checked for cross-country flights',
+    } : null,
   };
 
   // Generate AI prompt
@@ -182,7 +187,8 @@ Respond ONLY in JSON format with this structure:
     "trainingMilestone": "description",
     "rescheduleHistory": "description"
   }
-}`;
+}
+${routeWeatherInfo}`;
 
   try {
     // Use environment variable or default to gpt-4
@@ -216,7 +222,7 @@ Respond ONLY in JSON format with this structure:
       aiResponse.suggestions.map(async (suggestion, index) => {
         // Check weather for suggested time
         const suggestedDate = new Date(suggestion.slot);
-        const weather = await fetchFAAWeather(flight.departureAirport);
+        const weather = await fetchFAAWeather(flight.departureAirport, flight.schoolId);
         
         return {
           ...suggestion,

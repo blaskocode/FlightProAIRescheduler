@@ -1,27 +1,9 @@
 import { TrainingLevel, FlightType, AircraftType } from '@prisma/client';
+import { WeatherData } from './weather-providers/types';
+import { getWeatherAdapter } from './weather-providers/adapter';
 
-export interface WeatherData {
-  station: string;
-  time: Date;
-  wind: {
-    direction: number;
-    speed: number;
-    gust?: number;
-    units: 'knots';
-  };
-  visibility: {
-    value: number;
-    units: 'statute miles';
-  };
-  clouds: Array<{
-    cover: string;
-    altitude: number;
-  }>;
-  temperature: number;
-  dewpoint: number;
-  altimeter: number;
-  conditions?: string[];
-}
+// Re-export WeatherData for backward compatibility
+export type { WeatherData };
 
 export interface WeatherMinimums {
   visibility: number; // statute miles
@@ -212,97 +194,16 @@ export function checkWeatherSafety(
 }
 
 /**
- * Fetch current weather from FAA Aviation Weather Center
+ * Fetch current weather using the provider adapter
+ * This function now uses the adapter pattern with fallback logic
+ * @param airportCode - Airport ICAO code (e.g., "KAUS")
+ * @param schoolId - Optional school ID to check WeatherAPI.com settings
  */
-export async function fetchFAAWeather(airportCode: string): Promise<WeatherData | null> {
-  try {
-    // FAA METAR endpoint
-    const url = `https://aviationweather.gov/api/data/metar?ids=${airportCode}&format=json`;
-    const response = await fetch(url);
-
-    if (!response.ok) {
-      throw new Error(`FAA API returned ${response.status}`);
-    }
-
-    const data = await response.json();
-    
-    if (!data || data.length === 0) {
-      return null;
-    }
-
-    const metar = data[0];
-    return parseMETAR(metar.rawOb || metar.rawText);
-  } catch (error) {
-    console.error('Error fetching FAA weather:', error);
-    return null;
-  }
-}
-
-/**
- * Parse METAR string into WeatherData
- */
-function parseMETAR(metarString: string): WeatherData | null {
-  try {
-    // Simplified METAR parser
-    // Full implementation would use a proper METAR library
-    const parts = metarString.split(' ');
-    
-    // Extract station code
-    const station = parts[0];
-    
-    // Extract wind (e.g., "18008KT" or "18008G15KT")
-    const windMatch = metarString.match(/(\d{3})(\d{2,3})(G(\d{2,3}))?KT/);
-    const wind = {
-      direction: windMatch ? parseInt(windMatch[1]) : 0,
-      speed: windMatch ? parseInt(windMatch[2]) : 0,
-      gust: windMatch?.[4] ? parseInt(windMatch[4]) : undefined,
-      units: 'knots' as const,
-    };
-
-    // Extract visibility (e.g., "10SM")
-    const visMatch = metarString.match(/(\d+)(SM|M)/);
-    const visibility = {
-      value: visMatch ? parseInt(visMatch[1]) : 10,
-      units: 'statute miles' as const,
-    };
-
-    // Extract clouds (e.g., "FEW250", "SCT1000", "BKN030")
-    const cloudMatches = metarString.matchAll(/(FEW|SCT|BKN|OVC)(\d{3})/g);
-    const clouds = Array.from(cloudMatches).map(match => ({
-      cover: match[1],
-      altitude: parseInt(match[2]) * 100, // Convert to feet
-    }));
-
-    // Extract temperature (e.g., "23/14")
-    const tempMatch = metarString.match(/(\d{2})\/(\d{2})/);
-    const temperature = tempMatch ? parseInt(tempMatch[1]) : 20;
-    const dewpoint = tempMatch ? parseInt(tempMatch[2]) : 10;
-
-    // Extract altimeter (e.g., "A3012")
-    const altMatch = metarString.match(/A(\d{4})/);
-    const altimeter = altMatch ? parseFloat(altMatch[1]) / 100 : 30.12;
-
-    // Extract conditions
-    const conditions: string[] = [];
-    if (metarString.includes('RA')) conditions.push('RA');
-    if (metarString.includes('SN')) conditions.push('SN');
-    if (metarString.includes('TS')) conditions.push('TS');
-    if (metarString.includes('SH')) conditions.push('SH');
-
-    return {
-      station,
-      time: new Date(),
-      wind,
-      visibility,
-      clouds: clouds.length > 0 ? clouds : [{ cover: 'CLR', altitude: 99999 }],
-      temperature,
-      dewpoint,
-      altimeter,
-      conditions: conditions.length > 0 ? conditions : undefined,
-    };
-  } catch (error) {
-    console.error('Error parsing METAR:', error);
-    return null;
-  }
+export async function fetchFAAWeather(
+  airportCode: string,
+  schoolId?: string
+): Promise<WeatherData | null> {
+  const adapter = getWeatherAdapter();
+  return adapter.getCurrentWeather(airportCode, schoolId);
 }
 

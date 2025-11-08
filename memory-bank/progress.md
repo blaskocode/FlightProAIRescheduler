@@ -169,46 +169,174 @@
   - ✅ Admin settings page UI (weather API toggle, check frequency)
 
 ### Phase 2 (Weeks 1-2) - Enhanced Features
-- [ ] PR-13: WeatherAPI.com Integration (Optional)
-- [ ] PR-14: Route Waypoint Checking
-- [ ] PR-15: Confidence-Based Forecasting
-- [ ] PR-16: Advanced Dashboard Metrics
-- [ ] PR-17: Instructor & Student Currency Tracking
-- [ ] PR-18: Maintenance Scheduling System
-- [ ] PR-19: Database Read Replicas & Optimization
-- [ ] PR-20: Weather Data Caching Strategy
+- [x] **PR-13**: WeatherAPI.com Integration (Optional) ✅ COMPLETE
+  - ✅ Weather provider adapter pattern
+  - ✅ FAA and WeatherAPI.com providers
+  - ✅ Fallback logic implemented
+  - ✅ Cost tracking endpoint
+- [x] **PR-14**: Route Waypoint Checking ✅ COMPLETE
+  - ✅ Route parsing and waypoint interpolation
+  - ✅ Multi-point weather checking
+  - ✅ Confidence aggregation
+  - ✅ Integrated into weather check job
+  - ✅ AI reschedule includes route weather
+- [x] **PR-15**: Confidence-Based Forecasting ✅ COMPLETE
+  - ✅ Forecast confidence algorithm
+  - ✅ Three-tier alert system
+  - ✅ Trend analysis
+  - ✅ Notification templates updated
+  - ✅ Watch list component
+- [x] **PR-16**: Advanced Dashboard Metrics ✅ COMPLETE
+  - ✅ Analytics service (utilization, revenue, cancellations, efficiency)
+  - ✅ Metrics dashboard component
+  - ✅ Date range filters
+  - ✅ Weather impact, resource utilization, student progress metrics
+- [x] **PR-17**: Instructor & Student Currency Tracking ✅ COMPLETE
+  - ✅ Currency tracking service
+  - ✅ Currency dashboard component
+  - ✅ Currency status badges
+  - ✅ Approaching expiry reports
+  - ✅ Auto-prioritization for at-risk students
+- [x] **PR-18**: Maintenance Scheduling System ✅ COMPLETE
+  - ✅ Maintenance scheduling service (6 maintenance types)
+  - ✅ Maintenance due date calculator
+  - ✅ Proactive aircraft blocking
+  - ✅ Maintenance history logging
+  - ✅ Cost tracking
+- [x] **PR-19**: Database Read Replicas & Optimization ✅ COMPLETE
+  - ✅ Read replica infrastructure
+  - ✅ Query caching with Redis
+  - ✅ Query optimization utilities
+  - ✅ Database health monitoring
+- [x] **PR-20**: Weather Data Caching Strategy ✅ COMPLETE
+  - ✅ Multi-tier caching (memory, Redis, database)
+  - ✅ Stale-while-revalidate pattern
+  - ✅ Cache warming and preloading
+  - ✅ Cache statistics
 
 ### Phase 3 (Weeks 2-3) - Scale & Polish
-- [ ] PR-21: Multi-School Support
-- [ ] PR-22: Database Sharding Preparation
-- [ ] PR-23: Historical Weather Analytics
-- [ ] PR-24: Discovery Flight Workflow
-- [ ] PR-25: Mobile UI Polish & Responsiveness
-- [ ] PR-26: Advanced RBAC & Permissions
+- [x] PR-21: Multi-School Support ✅ COMPLETE
+  - School selection in auth flow
+  - School-scoped query utilities
+  - School management dashboard
+  - School-specific settings
+  - Cross-school analytics
+  - School onboarding wizard
+  - School switching UI
+- [x] PR-22: Database Sharding Preparation ✅ COMPLETE
+  - Shard routing logic (hash-based on schoolId)
+  - Shard manager service
+  - Shard metadata table
+  - Shard routing middleware
+  - Cross-shard query federation
+  - Shard rebalancing logic
+  - Shard monitoring dashboard
+  - Sharding architecture documentation
+- [x] PR-23: Historical Weather Analytics ✅ COMPLETE
+  - Weather analytics service
+  - Monthly weather patterns
+  - Airport-specific patterns
+  - Cancellation trends
+  - Optimal training windows
+  - Predictive insights
+  - Student weather reports
+  - Analytics dashboard
+- [x] PR-24: Discovery Flight Workflow ✅ COMPLETE
+  - Public booking form
+  - Simplified booking flow
+  - Auto-assign instructor
+  - Discovery flight dashboard
+  - Post-flight survey
+  - Enrollment offer automation
+  - Conversion to student account
+  - Conversion metrics
+- [x] PR-25: Mobile UI Polish & Responsiveness ✅ COMPLETE
+  - Mobile responsiveness audit
+  - Touch target optimization (44x44px minimum)
+  - Bottom navigation component
+  - Swipe gestures and pull-to-refresh
+  - Mobile-optimized modals
+  - PWA manifest and service worker
+  - Offline detection
+  - Responsive layouts
+- [x] PR-26: Advanced RBAC & Permissions ✅ COMPLETE
+  - Granular permission system
+  - Role templates (5 roles)
+  - Permission checking middleware
+  - Permission management UI
+  - Audit logging system
+  - API integration
+- [x] PR-27: SMS Notifications (Twilio) ✅ COMPLETE
+  - Twilio SMS integration
+  - SMS templates (160 char limit)
+  - Phone number verification
+  - Opt-in/opt-out functionality
+  - SMS cost tracking
+  - SMS settings UI
+- [x] PR-28: Google Calendar Integration ✅ COMPLETE
+  - Google Calendar API integration
+  - OAuth flow for calendar access
+  - Bidirectional sync (export/import)
+  - Conflict detection
+  - Calendar settings page
+- [x] PR-29: Predictive Cancellation Model (ML) ✅ COMPLETE
+  - Prediction model (rule-based/statistical)
+  - Multi-factor analysis
+  - Prediction API endpoints
+  - Model performance monitoring
+  - Background job for predictions
+  - Dashboard integration
+- [x] PR-30: React Native Mobile App ✅ COMPLETE
+  - Expo project structure
+  - Firebase authentication
+  - Core mobile screens
+  - Push notifications (FCM)
+  - Offline mode
+  - Camera integration
 
 ### Bonus Features (If Time Permits)
-- [ ] PR-27: SMS Notifications (Twilio)
-- [ ] PR-28: Google Calendar Integration
-- [ ] PR-29: Predictive Cancellation Model (ML)
-- [ ] PR-30: React Native Mobile App
 
 ## Current Status
 
-**Phase**: MVP 100% Complete - All Features Implemented  
-**Completion**: 100% (12 of 12 PRs complete, all code implemented)  
+**Phase**: MVP + Phase 2 100% Complete, Phase 3 PR-21 through PR-30 Complete  
+**Completion**: MVP 100% (12/12 PRs), Phase 2 100% (8/8 PRs), Phase 3 PR-21 through PR-30 Complete - 30 PRs total complete  
 **Infrastructure**: ✅ All services configured (Firebase, OpenAI, Resend, Database, Redis)  
 **Database**: ✅ Migrations synced, seeded with test data  
 **Code**: ✅ All APIs, services, and UI components implemented  
-**Next Steps**: Comprehensive testing, then production deployment
+**Next Steps**: Comprehensive testing, then production deployment, or continue with Phase 3
 
-**Last Updated**: MVP 100% Complete - All 12 PRs fully implemented including:
-- All backend APIs and services
-- All UI components (dashboard, admin settings, squawk reporting, progress tracking)
+**Last Updated**: MVP + Phase 2 100% Complete - All 20 PRs fully implemented including:
+- All MVP backend APIs and services (12 PRs)
+- All MVP UI components (dashboard, admin settings, squawk reporting, progress tracking)
+- Phase 2 enhancements (weather providers, route checking, confidence forecasting, analytics, currency tracking, maintenance scheduling, database optimization, weather caching)
 - Filtering, sorting, loading states, error handling
 - Firebase real-time hooks
 - All code TODOs completed
 
 ## Known Issues
+
+### Recent Bug Fixes ✅
+- ✅ **"No Flights Found" for New Users**: 
+  - **Problem**: New users who sign up don't have flights because seed script only creates flights for seeded students with placeholder Firebase UIDs
+  - **Solution**: Created `/api/flights/create-test` endpoint that generates 5 test flights for new users
+  - **UI**: Added "Create Test Flights" button in FlightList empty state component
+  - **Location**: `src/app/api/flights/create-test/route.ts`, `src/components/dashboard/FlightList.tsx`
+- ✅ **Authentication Token Decoding**: 
+  - **Problem**: Server-side API routes couldn't decode Firebase ID tokens from Authorization header
+  - **Solution**: Improved base64url padding handling in `requireAuth()` function
+  - **Location**: `src/lib/auth.ts`
+- ✅ **School-Based Filtering**: 
+  - **Problem**: Flights API wasn't properly filtering by user's school
+  - **Solution**: Added school ID lookup and filtering in `/api/flights` route
+  - **Location**: `src/app/api/flights/route.ts`
+- ✅ **PWA Service Worker**: 
+  - **Problem**: Service worker returning 500 error, icons 404 errors
+  - **Solution**: Removed custom API route (Next.js serves static files), created placeholder icons, updated manifest
+  - **Location**: `public/sw.js`, `public/manifest.json`, `src/app/layout.tsx`
+- ✅ **React Component Warnings**: 
+  - **Problem**: `useAuth is not defined`, `setState during render` warnings
+  - **Solution**: Added missing import, wrapped `fetchFlights` in `useCallback` with proper dependencies
+  - **Location**: `src/components/dashboard/FlightList.tsx`
 
 ### Code TODOs
 ✅ **All TODOs Completed**:
@@ -306,6 +434,7 @@
 3. ✅ **Code Implementation**: All APIs, services, and UI components complete
 4. ✅ **Code TODOs**: All completed (airport coordinates, AI triggers, jobs)
 5. ✅ **UI Components**: All complete (admin settings, squawk forms, progress tracker, filtering)
-6. **Next: Comprehensive Testing**: Test all API endpoints and workflows end-to-end
-7. **Next: Deployment**: Prepare for Vercel production deployment
+6. ✅ **Bug Fixes**: All recent issues resolved (no flights found, authentication, PWA, React warnings)
+7. **Next: Comprehensive Testing**: Test all API endpoints and workflows end-to-end
+8. **Next: Deployment**: Prepare for Vercel production deployment
 

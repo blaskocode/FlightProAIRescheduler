@@ -1,16 +1,26 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { signUp } from '@/lib/auth';
 import { useAuth } from '@/contexts/AuthContext';
+
+interface School {
+  id: string;
+  name: string;
+  airportCode: string;
+  address?: string;
+}
 
 export function SignupForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [schoolId, setSchoolId] = useState('');
+  const [schools, setSchools] = useState<School[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [loadingSchools, setLoadingSchools] = useState(true);
   const router = useRouter();
   const { user } = useAuth();
 
@@ -19,6 +29,27 @@ export function SignupForm() {
     router.push('/dashboard');
     return null;
   }
+
+  // Fetch schools on mount
+  useEffect(() => {
+    async function fetchSchools() {
+      try {
+        const response = await fetch('/api/schools');
+        if (response.ok) {
+          const data = await response.json();
+          setSchools(data);
+          if (data.length > 0) {
+            setSchoolId(data[0].id); // Default to first school
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching schools:', err);
+      } finally {
+        setLoadingSchools(false);
+      }
+    }
+    fetchSchools();
+  }, []);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -31,6 +62,11 @@ export function SignupForm() {
 
     if (password.length < 6) {
       setError('Password must be at least 6 characters');
+      return;
+    }
+
+    if (!schoolId) {
+      setError('Please select a flight school');
       return;
     }
 
@@ -50,6 +86,7 @@ export function SignupForm() {
             uid: firebaseUser.uid,
             email: firebaseUser.email,
             role: 'student', // Default to student, can be changed later
+            schoolId: schoolId,
           }),
         });
 
@@ -72,8 +109,8 @@ export function SignupForm() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
-      <div className="w-full max-w-md space-y-8">
+    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-8 sm:px-6 lg:px-8 pb-20 md:pb-12">
+      <div className="w-full max-w-md space-y-6 md:space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
             Create your account
@@ -131,11 +168,37 @@ export function SignupForm() {
                 type="password"
                 autoComplete="new-password"
                 required
-                className="relative block w-full rounded-b-md border-0 px-3 py-2 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6"
+                className="relative block w-full border-0 px-3 py-2 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6"
                 placeholder="Confirm Password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
               />
+            </div>
+            <div>
+              <label htmlFor="school" className="sr-only">
+                Flight School
+              </label>
+              {loadingSchools ? (
+                <div className="relative block w-full rounded-b-md border-0 px-3 py-2 text-gray-500 ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6">
+                  Loading schools...
+                </div>
+              ) : (
+                <select
+                  id="school"
+                  name="school"
+                  required
+                  className="relative block w-full rounded-b-md border-0 px-3 py-2 text-gray-900 ring-1 ring-inset ring-gray-300 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6"
+                  value={schoolId}
+                  onChange={(e) => setSchoolId(e.target.value)}
+                >
+                  {schools.map((school) => (
+                    <option key={school.id} value={school.id}>
+                      {school.name} ({school.airportCode})
+                      {school.address ? ` - ${school.address}` : ''}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
           </div>
 

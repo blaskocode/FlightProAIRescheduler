@@ -35,8 +35,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Fetch weather
-    const weather = await fetchFAAWeather(flight.departureAirport);
+    // Fetch weather (with schoolId for provider selection)
+    const weather = await fetchFAAWeather(flight.departureAirport, flight.schoolId);
     
     if (!weather) {
       return NextResponse.json(

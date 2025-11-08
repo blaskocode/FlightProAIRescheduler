@@ -28,6 +28,7 @@ model School {
   instructors       Instructor[]
   aircraft          Aircraft[]
   flights           Flight[]
+  discoveryFlights  DiscoveryFlight[]
   
   @@index([airportCode])
 }
@@ -83,6 +84,9 @@ model Student {
   
   // Notification settings
   emailNotifications    Boolean @default(true)
+  smsNotifications      Boolean @default(false)
+  smsOptIn             Boolean @default(false) // Explicit opt-in required
+  phoneVerified         Boolean @default(false) // Phone number verified
   weatherAlerts         Boolean @default(true)
   progressUpdates       Boolean @default(true)
   
@@ -93,6 +97,8 @@ model Student {
   progress          StudentProgress[]
   rescheduleRequests RescheduleRequest[]
   notificationsSent Notification[] @relation("NotificationRecipient")
+  discoveryFlightsConverted DiscoveryFlight[] @relation("ConvertedDiscoveryFlights")
+  googleCalendarSync    GoogleCalendarSync?
   
   @@index([schoolId])
   @@index([email])
@@ -132,6 +138,11 @@ model Instructor {
   totalStudents     Int       @default(0)
   activeStudents    Int       @default(0)
   totalInstructionalHours Float @default(0)
+  
+  // Notification settings
+  smsNotifications  Boolean   @default(false)
+  smsOptIn          Boolean   @default(false)
+  phoneVerified     Boolean   @default(false)
   
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
@@ -307,11 +318,21 @@ model Flight {
   weatherChecks     WeatherCheck[]
   rescheduleRequests RescheduleRequest[]
   notifications     Notification[]
+  discoveryFlight   DiscoveryFlight?
   
   // Rescheduling tracking
   rescheduledFromId String?      // Original flight if this is rescheduled
   rescheduledFrom   Flight?      @relation("RescheduledFlights", fields: [rescheduledFromId], references: [id], onDelete: SetNull)
   rescheduledTo     Flight[]     @relation("RescheduledFlights")
+  
+  // Google Calendar sync
+  calendarEventId   String?      // Google Calendar event ID
+  calendarSyncedAt  DateTime?
+  
+  // ML Prediction tracking
+  cancellationPrediction Float?  // Predicted cancellation probability (0-100)
+  predictionConfidence   Float?  // Prediction confidence (0-100)
+  predictionMadeAt       DateTime?
   
   createdAt         DateTime     @default(now())
   updatedAt         DateTime     @updatedAt
@@ -607,5 +628,120 @@ model StudentProgress {
   @@unique([studentId, lessonId])
   @@index([studentId])
   @@index([status])
+}
+
+model ShardMetadata {
+  id                String   @id @default(cuid())
+  shardId           Int      @unique
+  schoolCount       Int      @default(0)
+  lastUpdated       DateTime @default(now()) @updatedAt
+  health            String   @default("healthy") // "healthy" | "degraded" | "down"
+  activeConnections Int      @default(0)
+  queryCount        Int      @default(0)
+  errorCount        Int      @default(0)
+  createdAt         DateTime @default(now())
+  
+  @@index([shardId])
+  @@index([health])
+}
+
+model DiscoveryFlight {
+  id                  String   @id @default(cuid())
+  firstName           String
+  lastName            String
+  email               String
+  phone               String
+  flightId            String   @unique
+  flight              Flight   @relation(fields: [flightId], references: [id], onDelete: Cascade)
+  schoolId            String
+  school              School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  
+  status              String   @default("PENDING") // "PENDING" | "SCHEDULED" | "COMPLETED" | "CANCELLED" | "CONVERTED"
+  convertedToStudentId String?
+  convertedToStudent  Student? @relation("ConvertedDiscoveryFlights", fields: [convertedToStudentId], references: [id], onDelete: SetNull)
+  
+  surveySent          Boolean  @default(false)
+  surveyCompleted     Boolean  @default(false)
+  surveyResponse      Json?    // Survey answers
+  enrollmentOfferSent Boolean  @default(false)
+  notes               String?
+  
+  createdAt         DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  
+  @@index([schoolId])
+  @@index([email])
+  @@index([status])
+  @@index([flightId])
+}
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  action       String   // e.g., "flight.created", "permission.granted"
+  userId       String   // Firebase UID
+  userRole     String   // Role at time of action
+  resourceType String   // e.g., "flight", "user", "settings"
+  resourceId   String?  // ID of the resource affected
+  schoolId     String?  // School context
+  metadata      Json?    // Additional context
+  ipAddress    String?
+  userAgent    String?
+  
+  createdAt    DateTime @default(now())
+  
+  @@index([userId])
+  @@index([action])
+  @@index([resourceType])
+  @@index([resourceId])
+  @@index([schoolId])
+  @@index([createdAt])
+}
+
+model SMSCost {
+  id              String   @id @default(cuid())
+  schoolId        String?
+  recipientId     String?  // Student or Instructor ID
+  phoneNumber     String
+  messageId       String    // Twilio message SID
+  cost            Float
+  notificationType String?
+  sentAt          DateTime @default(now())
+  
+  @@index([schoolId])
+  @@index([recipientId])
+  @@index([sentAt])
+}
+
+model GoogleCalendarSync {
+  id              String   @id @default(cuid())
+  userId          String   @unique // Student or Instructor ID
+  userType        String   // "student" or "instructor"
+  schoolId        String
+  
+  // OAuth tokens
+  accessToken     String
+  refreshToken    String
+  tokenExpiresAt  DateTime
+  
+  // Calendar configuration
+  calendarId      String   @default("primary")
+  syncEnabled     Boolean  @default(true)
+  syncDirection   String   @default("bidirectional") // "export", "import", "bidirectional"
+  
+  // Webhook for calendar changes
+  webhookId       String?
+  webhookExpiresAt DateTime?
+  
+  // Sync metadata
+  lastSyncAt      DateTime?
+  lastSyncStatus  String?  // "success" | "error"
+  lastSyncError   String?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([userId])
+  @@index([schoolId])
+  @@index([syncEnabled])
 }
 

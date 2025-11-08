@@ -110,8 +110,46 @@ export async function getUserRole(firebaseUid: string): Promise<AuthUser | null>
 
 /**
  * Require authentication - throws error if not authenticated
+ * For server-side API routes, pass the request to extract token from headers
  */
-export async function requireAuth(): Promise<AuthUser> {
+export async function requireAuth(request?: any): Promise<AuthUser> {
+  // If request is provided (server-side), try to get UID from token
+  if (request) {
+    const authHeader = request.headers?.get('authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      try {
+        // Decode token to get UID (simple base64 decode for development)
+        // In production, use Firebase Admin SDK to verify token
+        const parts = token.split('.');
+        if (parts.length === 3) {
+          // Firebase JWT uses base64url encoding, need to handle padding
+          let base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+          const padding = base64.length % 4;
+          if (padding) {
+            base64 += '='.repeat(4 - padding);
+          }
+          const payload = JSON.parse(Buffer.from(base64, 'base64').toString());
+          const uid = payload.user_id || payload.sub || payload.uid;
+          console.log('Decoded token UID:', uid);
+          if (uid) {
+            const authUser = await getUserRole(uid);
+            if (authUser) {
+              console.log('Found auth user:', authUser.role);
+              return authUser;
+            } else {
+              console.warn('User not found in database for UID:', uid);
+            }
+          }
+        }
+      } catch (error) {
+        // Token decode failed, fall through to client-side method
+        console.warn('Token decode failed:', error);
+      }
+    }
+  }
+  
+  // Client-side or fallback: use existing method
   const user = await getCurrentUser();
   if (!user) {
     throw new Error('Authentication required');
