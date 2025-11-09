@@ -2,25 +2,50 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 
 export default function ProfilePage() {
   const { user, authUser, loading, signOut } = useAuth();
   const router = useRouter();
 
+  const [showLoading, setShowLoading] = useState(true);
+
   useEffect(() => {
-    if (!loading && !user) {
-      router.push('/login');
-    }
+    // Only redirect if we're sure there's no user (after loading completes)
+    const timeout = setTimeout(() => {
+      if (!loading && !user) {
+        router.push('/login');
+      }
+    }, 100);
+
+    return () => clearTimeout(timeout);
   }, [user, loading, router]);
+
+  useEffect(() => {
+    if (user) {
+      // User exists - show page immediately
+      setShowLoading(false);
+    } else if (!loading) {
+      // Loading finished but no user - don't show loading screen
+      setShowLoading(false);
+    }
+    
+    // Safety timeout: never show loading for more than 3 seconds
+    const timeout = setTimeout(() => {
+      setShowLoading(false);
+    }, 3000);
+    
+    return () => clearTimeout(timeout);
+  }, [user, loading]);
 
   const handleSignOut = async () => {
     await signOut();
     router.push('/login');
   };
 
-  if (loading) {
+  // Show loading ONLY if we're actively loading AND have no user yet
+  if (showLoading && loading && !user) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <p>Loading...</p>
@@ -28,6 +53,7 @@ export default function ProfilePage() {
     );
   }
 
+  // If no user after loading, show nothing (redirect will happen)
   if (!user) {
     return null;
   }

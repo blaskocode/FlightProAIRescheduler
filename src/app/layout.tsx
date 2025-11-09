@@ -55,11 +55,28 @@ export default function RootLayout({
               if ('serviceWorker' in navigator && typeof window !== 'undefined') {
                 window.addEventListener('load', () => {
                   navigator.serviceWorker.register('/sw.js')
-                    .then((reg) => console.log('SW registered:', reg))
+                    .then((reg) => {
+                      console.log('[SW] Registered:', reg);
+                      // Check for updates every time the page loads
+                      reg.update();
+                      // Listen for updates
+                      reg.addEventListener('updatefound', () => {
+                        const newWorker = reg.installing;
+                        if (newWorker) {
+                          newWorker.addEventListener('statechange', () => {
+                            if (newWorker.state === 'activated') {
+                              console.log('[SW] New service worker activated - reloading page');
+                              // Reload to use new service worker
+                              window.location.reload();
+                            }
+                          });
+                        }
+                      });
+                    })
                     .catch((err) => {
                       // Silently fail in development - service worker is optional
-                      if (process.env.NODE_ENV === 'production') {
-                        console.error('SW registration failed:', err);
+                      if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+                        console.error('[SW] Registration failed:', err);
                       }
                     });
                 });

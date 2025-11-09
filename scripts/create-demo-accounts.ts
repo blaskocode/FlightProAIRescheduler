@@ -1,160 +1,262 @@
 /**
- * Script to create demo accounts for testing
+ * Create demo accounts for system demonstration
  * 
- * This script creates Firebase accounts and syncs them to the database
- * with appropriate roles (student, instructor, admin)
+ * Creates:
+ * - 1 Admin
+ * - 1 Instructor (CFII)
+ * - 2 Students (one beginner, one instrument)
+ * - 2 Test flights for tomorrow
  * 
  * Usage: npx tsx scripts/create-demo-accounts.ts
  */
 
-import { initializeApp, cert } from 'firebase-admin/app';
-import { getAuth } from 'firebase-admin/auth';
 import { PrismaClient } from '@prisma/client';
 import * as dotenv from 'dotenv';
 
-// Load environment variables
 dotenv.config({ path: '.env.local' });
 dotenv.config({ path: '.env' });
 
 const prisma = new PrismaClient();
 
-// Initialize Firebase Admin (if service account available)
-let firebaseAdmin: any = null;
-let auth: any = null;
-
-try {
-  // Try to initialize Firebase Admin
-  // Note: This requires FIREBASE_SERVICE_ACCOUNT_KEY or similar
-  // For now, we'll create accounts via the API or manual process
-  console.log('📝 Note: This script will guide you through creating demo accounts.');
-  console.log('   Accounts need to be created via the signup flow or Firebase Console.\n');
-} catch (error) {
-  console.log('⚠️  Firebase Admin not configured. Accounts will need to be created via signup flow.\n');
-}
-
-interface DemoAccount {
-  email: string;
-  password: string;
-  role: 'student' | 'instructor' | 'admin';
-  firstName: string;
-  lastName: string;
-}
-
-const demoAccounts: DemoAccount[] = [
-  {
-    email: 'student.demo@flightpro.com',
-    password: 'DemoPass123!',
-    role: 'student',
-    firstName: 'Demo',
-    lastName: 'Student',
-  },
-  {
-    email: 'instructor.demo@flightpro.com',
-    password: 'DemoPass123!',
-    role: 'instructor',
-    firstName: 'Demo',
-    lastName: 'Instructor',
-  },
-  {
-    email: 'admin.demo@flightpro.com',
-    password: 'DemoPass123!',
-    role: 'admin',
-    firstName: 'Demo',
-    lastName: 'Admin',
-  },
-];
-
-async function checkExistingAccounts() {
-  console.log('🔍 Checking for existing demo accounts...\n');
-
-  for (const account of demoAccounts) {
-    let exists = false;
-    let hasFirebase = false;
-
-    if (account.role === 'student') {
-      const student = await prisma.student.findUnique({
-        where: { email: account.email },
-      });
-      exists = !!student;
-      hasFirebase = !!student?.firebaseUid;
-    } else if (account.role === 'instructor') {
-      const instructor = await prisma.instructor.findUnique({
-        where: { email: account.email },
-      });
-      exists = !!instructor;
-      hasFirebase = !!instructor?.firebaseUid;
-    } else if (account.role === 'admin') {
-      const admin = await prisma.admin.findUnique({
-        where: { email: account.email },
-      });
-      exists = !!admin;
-      hasFirebase = !!admin?.firebaseUid;
-    }
-
-    const status = exists
-      ? hasFirebase
-        ? '✅ Complete (has Firebase account)'
-        : '⚠️  Exists but missing Firebase account'
-      : '❌ Not created';
-
-    console.log(`   ${account.role.toUpperCase().padEnd(12)} ${account.email.padEnd(35)} ${status}`);
-  }
-}
-
-async function getFirstSchool() {
-  const school = await prisma.school.findFirst();
-  if (!school) {
-    throw new Error('No schools found in database. Please run seed script first.');
-  }
-  return school;
-}
-
 async function main() {
-  console.log('🚀 Demo Account Setup\n');
-  console.log('='.repeat(60));
+  console.log('🎯 Creating demo accounts for system demonstration...\n');
 
-  try {
-    // Check existing accounts
-    await checkExistingAccounts();
-
-    console.log('\n' + '='.repeat(60));
-    console.log('\n📋 Instructions to Create Demo Accounts:\n');
-
-    const school = await getFirstSchool();
-    console.log(`✅ Found school: ${school.name} (${school.airportCode})\n`);
-
-    console.log('Option 1: Create via Signup Flow (Recommended)');
-    console.log('   1. Go to: http://localhost:3000/signup');
-    console.log('   2. For each account:');
-    for (const account of demoAccounts) {
-      console.log(`\n   ${account.role.toUpperCase()}:`);
-      console.log(`      Email: ${account.email}`);
-      console.log(`      Password: ${account.password}`);
-      console.log(`      School: ${school.name}`);
-      console.log(`      Note: Signup creates "student" by default.`);
-      if (account.role !== 'student') {
-        console.log(`      ⚠️  After signup, you'll need to update the role in database.`);
-      }
-    }
-
-    console.log('\n\nOption 2: Create via API (if sync-user endpoint supports role)');
-    console.log('   Use the /api/auth/sync-user endpoint with role parameter');
-
-    console.log('\n\nOption 3: Manual Database Update');
-    console.log('   1. Create Firebase accounts via Firebase Console');
-    console.log('   2. Get Firebase UIDs');
-    console.log('   3. Update database records with Firebase UIDs');
-
-    console.log('\n' + '='.repeat(60));
-    console.log('\n💡 After creating accounts, run this script again to verify.');
-    console.log('='.repeat(60));
-  } catch (error: any) {
-    console.error('\n❌ Error:', error.message);
-    process.exit(1);
-  } finally {
-    await prisma.$disconnect();
+  // Get or create school
+  let school = await prisma.school.findFirst();
+  if (!school) {
+    school = await prisma.school.create({
+      data: {
+        name: 'Demo Flight School',
+        airportCode: 'KAUS',
+        address: '123 Aviation Way, Austin, TX',
+        phone: '512-555-0100',
+        email: 'info@demoflightschool.com',
+      },
+    });
+    console.log('✅ Created demo school:', school.name);
+  } else {
+    console.log('✅ Using existing school:', school.name);
   }
+
+  // Create or update admin
+  let admin = await prisma.admin.findUnique({
+    where: { email: 'demo.admin@flightpro.com' },
+  });
+
+  if (!admin) {
+    admin = await prisma.admin.create({
+      data: {
+        email: 'demo.admin@flightpro.com',
+        firstName: 'Demo',
+        lastName: 'Admin',
+        firebaseUid: `demo-admin-${Date.now()}`, // Unique placeholder
+      },
+    });
+    console.log('✅ Created admin account:', admin.email);
+  } else {
+    console.log('✅ Admin account exists:', admin.email);
+  }
+
+  // Create or update instructor
+  let instructor = await prisma.instructor.findUnique({
+    where: { email: 'demo.instructor@flightpro.com' },
+  });
+
+  if (!instructor) {
+    instructor = await prisma.instructor.create({
+      data: {
+        schoolId: school.id,
+        email: 'demo.instructor@flightpro.com',
+        firstName: 'Demo',
+        lastName: 'Instructor',
+        phone: '512-555-0101',
+        firebaseUid: `demo-instructor-${Date.now()}`, // Unique placeholder
+        certificateNumber: 'CFI123456',
+        certificateExpiry: new Date('2026-12-31'),
+        cfiExpiry: new Date('2026-12-31'),
+        cfiiRating: true, // Instrument instructor
+        meiRating: false,
+        instrumentCurrent: true,
+      },
+    });
+    console.log('✅ Created instructor account (CFII):', instructor.email);
+  } else {
+    console.log('✅ Instructor account exists:', instructor.email);
+  }
+
+  // Create or update student pilot (beginner)
+  let studentPilot = await prisma.student.findUnique({
+    where: { email: 'demo.student@flightpro.com' },
+  });
+
+  if (!studentPilot) {
+    studentPilot = await prisma.student.create({
+      data: {
+        schoolId: school.id,
+        email: 'demo.student@flightpro.com',
+        firstName: 'Demo',
+        lastName: 'Student',
+        phone: '512-555-0102',
+        firebaseUid: `demo-student-${Date.now()}`, // Unique placeholder
+        trainingLevel: 'PRIVATE_PILOT',
+        currentStage: 'STAGE_1_PRE_SOLO',
+        currentLesson: 1,
+        totalFlightHours: 15,
+        preferredInstructorId: instructor.id,
+      },
+    });
+    console.log('✅ Created student pilot account:', studentPilot.email);
+  } else {
+    console.log('✅ Student pilot account exists:', studentPilot.email);
+  }
+
+  // Create or update instrument student (advanced)
+  let irStudent = await prisma.student.findUnique({
+    where: { email: 'demo.ir.student@flightpro.com' },
+  });
+
+  if (!irStudent) {
+    irStudent = await prisma.student.create({
+      data: {
+        schoolId: school.id,
+        email: 'demo.ir.student@flightpro.com',
+        firstName: 'Demo IR',
+        lastName: 'Student',
+        phone: '512-555-0103',
+        firebaseUid: `demo-ir-student-${Date.now()}`, // Unique placeholder
+        trainingLevel: 'INSTRUMENT_RATED',
+        currentStage: 'STAGE_3_CHECKRIDE_PREP',
+        currentLesson: 15,
+        totalFlightHours: 75,
+        instrumentHours: 20,
+        preferredInstructorId: instructor.id,
+      },
+    });
+    console.log('✅ Created instrument student account:', irStudent.email);
+  } else {
+    console.log('✅ Instrument student account exists:', irStudent.email);
+  }
+
+  // Get or create aircraft
+  let aircraft = await prisma.aircraft.findFirst({
+    where: { schoolId: school.id },
+  });
+
+  if (!aircraft) {
+    aircraft = await prisma.aircraft.create({
+      data: {
+        schoolId: school.id,
+        typeId: 'c172', // Assuming aircraft type exists
+        tailNumber: 'N12345',
+        homeBase: school.airportCode,
+        status: 'AVAILABLE',
+        hobbsTime: 1500,
+        lastInspection: new Date(),
+        nextInspectionDue: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), // 90 days from now
+      },
+    });
+    console.log('✅ Created demo aircraft:', aircraft.tailNumber);
+  } else {
+    console.log('✅ Using existing aircraft:', aircraft.tailNumber);
+  }
+
+  // Create test flights for tomorrow
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  tomorrow.setHours(10, 0, 0, 0);
+
+  const tomorrowEnd = new Date(tomorrow);
+  tomorrowEnd.setHours(12, 0, 0, 0);
+
+  // Flight 1: Student pilot (stricter weather minimums)
+  const briefingStart = new Date(tomorrow);
+  briefingStart.setMinutes(tomorrow.getMinutes() - 30); // 30 min before flight
+
+  const debriefEnd = new Date(tomorrowEnd);
+  debriefEnd.setMinutes(tomorrowEnd.getMinutes() + 30); // 30 min after flight
+
+  const flight1 = await prisma.flight.create({
+    data: {
+      schoolId: school.id,
+      studentId: studentPilot.id,
+      instructorId: instructor.id,
+      aircraftId: aircraft.id,
+      scheduledStart: tomorrow,
+      scheduledEnd: tomorrowEnd,
+      briefingStart,
+      debriefEnd,
+      departureAirport: 'KAUS',
+      destinationAirport: 'KHYI',
+      route: 'KAUS-KHYI',
+      lessonTitle: 'Basic Maneuvers',
+      status: 'CONFIRMED',
+      flightType: 'DUAL_INSTRUCTION',
+    },
+  });
+  console.log('✅ Created test flight 1 (Student Pilot):', flight1.id);
+
+  // Flight 2: Instrument student (relaxed weather minimums)
+  const tomorrow2 = new Date(tomorrow);
+  tomorrow2.setMinutes(30);
+  const tomorrow2End = new Date(tomorrow2);
+  tomorrow2End.setHours(12, 30, 0, 0);
+
+  const briefingStart2 = new Date(tomorrow2);
+  briefingStart2.setMinutes(tomorrow2.getMinutes() - 30); // 30 min before flight
+
+  const debriefEnd2 = new Date(tomorrow2End);
+  debriefEnd2.setMinutes(tomorrow2End.getMinutes() + 30); // 30 min after flight
+
+  const flight2 = await prisma.flight.create({
+    data: {
+      schoolId: school.id,
+      studentId: irStudent.id,
+      instructorId: instructor.id,
+      aircraftId: aircraft.id,
+      scheduledStart: tomorrow2,
+      scheduledEnd: tomorrow2End,
+      briefingStart: briefingStart2,
+      debriefEnd: debriefEnd2,
+      departureAirport: 'KAUS',
+      destinationAirport: 'KHYI',
+      route: 'KAUS-KHYI',
+      lessonTitle: 'ILS Approaches',
+      status: 'CONFIRMED',
+      flightType: 'DUAL_INSTRUCTION',
+    },
+  });
+  console.log('✅ Created test flight 2 (Instrument Student):', flight2.id);
+
+  console.log('\n✅ Demo accounts setup complete!\n');
+  console.log('📋 Account Credentials (Password for all: DemoPass123!):\n');
+  console.log('Admin:');
+  console.log('  Email: demo.admin@flightpro.com');
+  console.log('  Password: DemoPass123!\n');
+  console.log('Instructor (CFII):');
+  console.log('  Email: demo.instructor@flightpro.com');
+  console.log('  Password: DemoPass123!\n');
+  console.log('Student Pilot (Beginner):');
+  console.log('  Email: demo.student@flightpro.com');
+  console.log('  Password: DemoPass123!');
+  console.log('  Training: Private Pilot (Strict weather minimums)\n');
+  console.log('Instrument Student (Advanced):');
+  console.log('  Email: demo.ir.student@flightpro.com');
+  console.log('  Password: DemoPass123!');
+  console.log('  Training: Instrument Rating (Relaxed weather minimums)\n');
+  console.log('📅 Test Flights Created:');
+  console.log(`  Flight 1 (Student): Tomorrow ${tomorrow.toLocaleTimeString()} - KAUS to KHYI`);
+  console.log(`  Flight 2 (IR Student): Tomorrow ${tomorrow2.toLocaleTimeString()} - KAUS to KHYI\n`);
+  console.log('🔥 Next Steps:');
+  console.log('  1. Create these accounts in Firebase Console');
+  console.log('  2. Run: npm run db:firebase (if you have service account)');
+  console.log('  3. Or manually create in Firebase Auth');
+  console.log('  4. Follow docs/DEMO_WALKTHROUGH.md for full demo script\n');
+
+  await prisma.$disconnect();
 }
 
-main();
-
+main().catch((error) => {
+  console.error('Error creating demo accounts:', error);
+  prisma.$disconnect();
+  process.exit(1);
+});

@@ -67,6 +67,12 @@
 ### Dashboard UI ✅
 - ✅ **Flight List**: Display upcoming flights with filters (moved to dedicated `/flights` page)
 - ✅ **Weather Alerts**: Active weather conflict display (endpoint created, component fetching data)
+- ✅ **Weather Map**: Interactive Mapbox GL JS map showing airport weather status with color-coded markers
+  - Map view with zoom/pan controls
+  - Airport markers (red=unsafe, yellow=marginal, green=safe)
+  - Popups with alert details, flight times, confidence levels
+  - Map/list view toggle
+  - Auto-refresh every 5 minutes
 - ✅ **Reschedule Modal**: AI suggestion selection UI
 - ✅ **Responsive Design**: Mobile-friendly layout (fully optimized, no overflow issues)
 - ✅ **Navigation System**: Top navigation for desktop, bottom navigation for mobile

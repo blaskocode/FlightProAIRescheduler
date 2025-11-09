@@ -5,24 +5,37 @@ export async function GET(request: NextRequest) {
   try {
     // Get active weather alerts (UNSAFE or MARGINAL weather checks from recent checks)
     const now = new Date();
-    const future = new Date(now.getTime() + 48 * 60 * 60 * 1000); // Next 48 hours
+    const future = new Date(now.getTime() + 72 * 60 * 60 * 1000); // Next 72 hours (3 days)
 
     const alerts = await prisma.weatherCheck.findMany({
       where: {
         result: {
           in: ['UNSAFE', 'MARGINAL'],
         },
+        // Show checks from last 7 days for demo purposes
         checkTime: {
-          gte: new Date(now.getTime() - 24 * 60 * 60 * 1000), // Last 24 hours
+          gte: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000), // Last 7 days
         },
         flight: {
           scheduledStart: {
             gte: now,
             lte: future,
           },
-          status: {
-            in: ['PENDING', 'CONFIRMED'],
-          },
+          OR: [
+            // Active flights that need attention
+            {
+              status: {
+                in: ['PENDING', 'CONFIRMED'],
+              },
+            },
+            // Recently cancelled flights (within last hour) - show what was just cancelled
+            {
+              status: 'WEATHER_CANCELLED',
+              updatedAt: {
+                gte: new Date(now.getTime() - 60 * 60 * 1000), // Last hour
+              },
+            },
+          ],
         },
       },
       include: {
@@ -31,6 +44,7 @@ export async function GET(request: NextRequest) {
             id: true,
             scheduledStart: true,
             lessonTitle: true,
+            departureAirport: true,
           },
         },
       },
@@ -71,6 +85,7 @@ export async function GET(request: NextRequest) {
         flight: {
           scheduledStart: alert.flight.scheduledStart.toISOString(),
           lessonTitle: alert.flight.lessonTitle,
+          departureAirport: alert.flight.departureAirport,
         },
       };
     });

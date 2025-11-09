@@ -216,7 +216,7 @@ export async function POST(request: NextRequest) {
           firebaseUid: uid,
           firstName: firstName || email.split('@')[0],
           lastName: lastName || 'User',
-          phone: phone || '',
+          // Admin model doesn't have phone field
         },
       });
 

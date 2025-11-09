@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
@@ -11,16 +11,30 @@ export default function Home() {
   const { user, loading } = useAuth();
   const router = useRouter();
 
+  const [showLoading, setShowLoading] = useState(false);
+
   // Redirect authenticated users to dashboard immediately
   useEffect(() => {
     if (!loading && user) {
       // Use replace instead of push to avoid adding to history
       router.replace('/dashboard');
+      // Show loading briefly during redirect
+      setShowLoading(true);
+    } else if (!loading && !user) {
+      // No user and not loading - show page
+      setShowLoading(false);
     }
+    
+    // Safety timeout: never show loading for more than 2 seconds
+    const timeout = setTimeout(() => {
+      setShowLoading(false);
+    }, 2000);
+    
+    return () => clearTimeout(timeout);
   }, [user, loading, router]);
 
-  // Show loading state while checking auth OR if user exists (during redirect)
-  if (loading || user) {
+  // Show loading state ONLY during redirect (user exists) or brief auth check
+  if (showLoading && (loading || user)) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <p className="text-gray-600">Loading...</p>

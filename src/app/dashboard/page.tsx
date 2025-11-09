@@ -40,12 +40,40 @@ export default function DashboardPage() {
   }, [authUser, selectedSchoolId]);
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.push('/login');
-    }
+    // Only redirect if we're sure there's no user (after loading completes)
+    // Give it a brief moment for auth to initialize
+    const timeout = setTimeout(() => {
+      if (!loading && !user) {
+        router.push('/login');
+      }
+    }, 100); // Small delay to allow auth to initialize
+
+    return () => clearTimeout(timeout);
   }, [user, loading, router]);
 
-  if (loading) {
+  // Show loading ONLY if we're actively loading AND have no user yet
+  // If user exists but authUser is still loading, show the page anyway
+  // Add safety timeout to prevent infinite loading
+  const [showLoading, setShowLoading] = useState(true);
+  
+  useEffect(() => {
+    if (user) {
+      // User exists - show page immediately
+      setShowLoading(false);
+    } else if (!loading) {
+      // Loading finished but no user - don't show loading screen
+      setShowLoading(false);
+    }
+    
+    // Safety timeout: never show loading for more than 3 seconds
+    const timeout = setTimeout(() => {
+      setShowLoading(false);
+    }, 3000);
+    
+    return () => clearTimeout(timeout);
+  }, [user, loading]);
+
+  if (showLoading && loading && !user) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <p>Loading...</p>
@@ -53,6 +81,7 @@ export default function DashboardPage() {
     );
   }
 
+  // If no user after loading, show nothing (redirect will happen)
   if (!user) {
     return null;
   }

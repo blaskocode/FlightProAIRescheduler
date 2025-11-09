@@ -1,0 +1,7 @@
+-- Step 1: Add new enum values
+ALTER TYPE "FlightStatus" ADD VALUE IF NOT EXISTS 'PENDING';
+ALTER TYPE "FlightStatus" ADD VALUE IF NOT EXISTS 'RESCHEDULE_PENDING';
+ALTER TYPE "FlightStatus" ADD VALUE IF NOT EXISTS 'RESCHEDULE_CONFIRMED';
+
+-- Step 2: Update all SCHEDULED flights to PENDING
+UPDATE "Flight" SET status = 'PENDING' WHERE status = 'SCHEDULED';

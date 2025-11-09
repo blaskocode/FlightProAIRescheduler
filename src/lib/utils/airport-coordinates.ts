@@ -9,6 +9,10 @@ const COMMON_AIRPORTS: Record<string, { latitude: number; longitude: number }> =
   KHOU: { latitude: 29.6454, longitude: -95.2789 }, // Houston Hobby
   KDFW: { latitude: 32.8998, longitude: -97.0403 }, // Dallas/Fort Worth
   KIAH: { latitude: 29.9844, longitude: -95.3414 }, // Houston Intercontinental
+  KSAT: { latitude: 29.5337, longitude: -98.4698 }, // San Antonio International
+  KELP: { latitude: 31.8072, longitude: -106.3778 }, // El Paso International
+  KPHX: { latitude: 33.4342, longitude: -112.0080 }, // Phoenix Sky Harbor
+  KHYI: { latitude: 30.0618, longitude: -97.9614 }, // San Marcos Regional
   KORD: { latitude: 41.9786, longitude: -87.9048 }, // Chicago O'Hare
   KLAX: { latitude: 33.9425, longitude: -118.4081 }, // Los Angeles
   KJFK: { latitude: 40.6413, longitude: -73.7781 }, // New York JFK

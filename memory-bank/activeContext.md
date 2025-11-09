@@ -229,7 +229,7 @@
   - ✅ PR-37: Backend APIs - Missing Frontend (Part 1) - COMPLETE (Weather analytics, currency, maintenance - mostly already implemented, added student weather report)
   - ✅ PR-38: Backend APIs - Missing Frontend (Part 2) - COMPLETE (Prediction performance metrics, discovery flight survey/conversion, cache management)
   - ✅ PR-39: Backend APIs - Missing Frontend (Part 3) - COMPLETE (Database health dashboard, enhanced audit logs, sharding federated queries)
-  - ✅ PR-32: Visual Weather Dashboard with Maps - COMPLETE (Leaflet map integration, airport markers with weather status, popups with alert details, map/list toggle, auto-refresh)
+  - ✅ PR-32: Visual Weather Dashboard with Maps - COMPLETE (Mapbox GL JS integration, airport markers with weather status, popups with alert details, map/list toggle, auto-refresh)
   - ✅ PR-34: Route Visualization Component - COMPLETE (Route visualization on map with waypoints, weather status at each waypoint, integrated into FlightCard and RescheduleModal)
   - ✅ PR-35: Enhanced Mobile Experience - COMPLETE (Swipe gestures with haptic feedback, quick reschedule button, pull-to-refresh, mobile-optimized modals, offline support with queue and cache)
 - ✅ **Recent Fixes & Improvements**:
@@ -243,6 +243,13 @@
   - **New Pages**: Created dedicated `/flights` and `/profile` pages
   - **Dashboard Restructure**: Dashboard now serves as overview page, flights moved to dedicated page
   - **Navigation Visibility**: Fixed navigation to show for all authenticated users (students, instructors, admins)
+  - **Mapbox Weather Map Implementation**: Replaced react-leaflet with Mapbox GL JS for weather map visualization
+    - Installed `mapbox-gl` and `@types/mapbox-gl` packages
+    - Created `MapboxWeatherMap` component with interactive map, color-coded markers (red/yellow/green for unsafe/marginal/safe)
+    - Fixed coordinate order issue (Mapbox uses [longitude, latitude] instead of [latitude, longitude])
+    - Updated `WeatherMapDashboard` to use Mapbox component with map/list view toggle
+    - Created `MAPBOX_SETUP.md` documentation for token setup
+    - Map displays airport weather alerts with popups showing alert details, flight times, confidence levels
 
 ## Current Priorities
 

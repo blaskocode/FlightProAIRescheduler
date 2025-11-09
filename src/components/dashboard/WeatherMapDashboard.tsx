@@ -5,9 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-
-// Map view temporarily disabled due to React Leaflet integration issues
-// Will be re-enabled once the map component is properly fixed
+import { MapboxWeatherMap } from './MapboxWeatherMap';
 
 interface AirportWeather {
   airportCode: string;
@@ -35,7 +33,7 @@ export function WeatherMapDashboard({ schoolId }: WeatherMapDashboardProps) {
   const [airports, setAirports] = useState<AirportWeather[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
-  const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
+  const [viewMode, setViewMode] = useState<'map' | 'list'>('map'); // Default to map view
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -58,6 +56,7 @@ export function WeatherMapDashboard({ schoolId }: WeatherMapDashboardProps) {
         },
       });
       const alertsData = await alertsResponse.ok ? await alertsResponse.json() : [];
+      console.log('[WeatherMap] Fetched alerts:', alertsData.length);
 
       // Fetch flights to get airport codes
       const flightsResponse = await fetch('/api/flights', {
@@ -72,11 +71,9 @@ export function WeatherMapDashboard({ schoolId }: WeatherMapDashboardProps) {
 
       // Process alerts
       alertsData.forEach((alert: any) => {
-        // Extract airport code from flight (assuming departureAirport)
-        const flight = flightsData.find((f: any) => f.id === alert.flightId);
-        if (!flight) return;
-
-        const airportCode = flight.departureAirport || 'UNKNOWN';
+        // Get airport code from alert's flight data
+        const airportCode = alert.flight?.departureAirport;
+        if (!airportCode) return;
         
         if (!airportMap.has(airportCode)) {
           airportMap.set(airportCode, {
@@ -152,6 +149,7 @@ export function WeatherMapDashboard({ schoolId }: WeatherMapDashboardProps) {
         (airport) => airport.latitude !== 0 || airport.longitude !== 0
       );
 
+      console.log('[WeatherMap] Valid airports:', validAirports.length);
       setAirports(validAirports);
       setLastRefresh(new Date());
     } catch (error) {
@@ -171,8 +169,8 @@ export function WeatherMapDashboard({ schoolId }: WeatherMapDashboardProps) {
   }, [schoolId, mounted, user, authUser, authLoading, fetchWeatherData]);
 
 
-  // Default center (Austin, TX)
-  const defaultCenter: [number, number] = [30.1945, -97.6699];
+  // Default center (Austin, TX) - Mapbox uses [longitude, latitude]
+  const defaultCenter: [number, number] = [-97.6699, 30.1945];
   const defaultZoom = 6;
 
   if (!mounted) {
@@ -229,20 +227,18 @@ export function WeatherMapDashboard({ schoolId }: WeatherMapDashboardProps) {
       </CardHeader>
       <CardContent>
         {viewMode === 'map' ? (
-          <div className="h-96 w-full rounded-lg overflow-hidden border bg-gray-50">
-            <div className="flex items-center justify-center h-full text-gray-500">
-              <div className="text-center p-6">
-                <p className="text-lg font-semibold mb-2">Map View Temporarily Unavailable</p>
-                <p className="text-sm mb-4">We're experiencing issues with the map integration. Please use List View to see airport weather information.</p>
-                <Button
-                  onClick={() => setViewMode('list')}
-                  variant="outline"
-                  size="sm"
-                >
-                  Switch to List View
-                </Button>
+          <div className="h-96 w-full rounded-lg overflow-hidden border">
+            {airports.length === 0 ? (
+              <div className="flex items-center justify-center h-full text-gray-500">
+                <p>No airports to display on map</p>
               </div>
-            </div>
+            ) : (
+              <MapboxWeatherMap
+                airports={airports}
+                defaultCenter={defaultCenter}
+                defaultZoom={defaultZoom}
+              />
+            )}
           </div>
         ) : (
           <div className="space-y-3 max-h-96 overflow-y-auto">

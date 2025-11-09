@@ -43,5 +43,10 @@ if (typeof window === 'undefined') {
   // Only import workers on the server side (not in browser)
   // This ensures workers start when the server starts
   import('./workers');
+  
+  // Start local scheduler for development (Vercel Cron handles production)
+  if (process.env.NODE_ENV !== 'production') {
+    import('./local-scheduler');
+  }
 }
 

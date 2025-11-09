@@ -119,6 +119,8 @@ RootLayout
 Dashboard (Student/Instructor/Admin)
   ├── MetricsDashboard (admin/metrics view)
   ├── WeatherAnalyticsDashboard (admin/analytics view)
+  ├── WeatherMapDashboard (weather map with Mapbox GL JS)
+  │   └── MapboxWeatherMap (interactive map component)
   ├── Quick Actions Card
   ├── StudentList (instructor only)
   ├── SquawkReportCard (instructor/admin only)

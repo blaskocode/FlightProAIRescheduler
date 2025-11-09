@@ -2,8 +2,20 @@
 
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { FitBounds } from './FitBounds';
 import { Badge } from '@/components/ui/badge';
+
+// Import Leaflet CSS only on client
+if (typeof window !== 'undefined') {
+  require('leaflet/dist/leaflet.css');
+  // Fix for Leaflet default marker icon path issue
+  const L = require('leaflet');
+  delete (L.Icon.Default.prototype as any)._getIconUrl;
+  L.Icon.Default.mergeOptions({
+    iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
+    iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+  });
+}
 
 // Dynamically import react-leaflet components to avoid SSR issues
 const MapContainer = dynamic(
@@ -20,6 +32,12 @@ const Marker = dynamic(
 );
 const Popup = dynamic(
   () => import('react-leaflet').then((mod) => mod.Popup),
+  { ssr: false }
+);
+
+// Dynamically import FitBounds to avoid SSR issues with useMap hook
+const FitBounds = dynamic(
+  () => import('./FitBounds').then((mod) => ({ default: mod.FitBounds })),
   { ssr: false }
 );
 

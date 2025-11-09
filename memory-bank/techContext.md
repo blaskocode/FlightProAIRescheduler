@@ -32,6 +32,7 @@
 - **Weather (Optional)**: WeatherAPI.com - OFF by default, toggleable
 - **Email**: Resend (transactional emails)
 - **Auth**: Firebase Authentication
+- **Maps**: Mapbox GL JS - FREE tier (50,000 map loads/month)
 
 ### Infrastructure
 - **Hosting**: Vercel (serverless functions, edge network)
@@ -76,6 +77,7 @@ FIREBASE_PROJECT_ID="..."
 OPENAI_API_KEY="sk-..."
 RESEND_API_KEY="re_..."
 WEATHER_API_KEY="..."  # Optional
+NEXT_PUBLIC_MAPBOX_TOKEN="pk...."  # Mapbox GL JS token (free tier: 50k loads/month)
 
 # App
 NODE_ENV="development"
@@ -160,7 +162,9 @@ NEXT_PUBLIC_APP_URL="http://localhost:3000"
   "@tanstack/react-query": "^5.0.0",
   "tailwindcss": "^3.0.0",
   "date-fns": "^3.0.0",
-  "date-fns-tz": "^2.0.0"
+  "date-fns-tz": "^2.0.0",
+  "mapbox-gl": "^3.0.0",
+  "@types/mapbox-gl": "^3.0.0"
 }
 ```
 
