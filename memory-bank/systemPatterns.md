@@ -79,18 +79,57 @@ All booking operations use database transactions to prevent race conditions:
 - Optimistic concurrency control
 - Atomic operations
 
+## Navigation Architecture
+
+### Unified Navigation System
+The app uses a responsive navigation pattern:
+- **Desktop**: Top navigation bar (sticky, always visible)
+- **Mobile**: Bottom navigation bar (fixed, always accessible)
+- **Both**: Same navigation items (Dashboard, Flights, Profile, Settings*)
+- **Role-based**: Settings only shows for admins/super admins
+
+### Navigation Components
+- `TopNavigation.tsx`: Desktop navigation (hidden on mobile via `hidden md:block`)
+- `BottomNavigation.tsx`: Mobile navigation (hidden on desktop via `md:hidden`)
+- Both components:
+  - Filter items based on user role
+  - Show only when user is authenticated (`user` from Firebase)
+  - Hide on auth pages (`/login`, `/signup`, `/`)
+  - Prevent hydration errors with `mounted` state
+
+### Page Structure
+- **Dashboard** (`/dashboard`): Overview page with metrics, quick actions, weather alerts
+- **Flights** (`/flights`): Dedicated page for flight management (filtering, sorting, rescheduling)
+- **Profile** (`/profile`): User profile information and sign out
+- **Settings** (`/admin/settings`): Admin-only settings page
+
 ## Component Relationships
 
 ### Frontend Components
 ```
+RootLayout
+  ├── TopNavigation (desktop only, hidden on mobile)
+  ├── BottomNavigation (mobile only, hidden on desktop)
+  └── Page Content
+      ├── Dashboard (overview page with metrics and quick actions)
+      ├── Flights (dedicated flight management page)
+      ├── Profile (user profile page)
+      └── Admin Settings (admin only)
+
 Dashboard (Student/Instructor/Admin)
-  ├── FlightList
-  │   └── FlightCard
-  ├── WeatherAlerts
-  │   └── WeatherWidget
-  ├── ProgressTracker
-  └── RescheduleModal
-      └── SuggestionCard
+  ├── MetricsDashboard (admin/metrics view)
+  ├── WeatherAnalyticsDashboard (admin/analytics view)
+  ├── Quick Actions Card
+  ├── StudentList (instructor only)
+  ├── SquawkReportCard (instructor/admin only)
+  └── WeatherAlerts
+
+Flights Page
+  └── FlightList
+      ├── FlightCard
+      │   ├── RescheduleModal
+      │   └── WeatherOverrideModal
+      └── Filters & Sorting
 ```
 
 ### Service Dependencies

@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
           lessonNumber: authUser.studentId ? (userRecord as any).currentLesson || 1 : undefined,
           lessonTitle: 'Flight Lesson',
           departureAirport: userRecord.school.airportCode,
-          status: i === 0 ? 'CONFIRMED' : 'SCHEDULED',
+          status: i === 0 ? 'CONFIRMED' : 'PENDING',
         },
       });
 

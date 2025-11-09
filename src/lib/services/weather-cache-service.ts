@@ -237,7 +237,7 @@ export async function preloadCacheForFlights(
         lte: future,
       },
       status: {
-        in: ['SCHEDULED', 'CONFIRMED'],
+        in: ['PENDING', 'CONFIRMED'],
       },
     },
     select: {

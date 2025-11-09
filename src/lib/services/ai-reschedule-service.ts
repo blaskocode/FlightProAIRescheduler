@@ -36,22 +36,76 @@ export async function generateRescheduleSuggestions(
   flightId: string
 ): Promise<RescheduleResponse> {
   // Fetch flight with all related data
+  // Use select to avoid fetching missing columns like smsNotifications
   const flight = await prisma.flight.findUnique({
     where: { id: flightId },
-    include: {
+    select: {
+      id: true,
+      schoolId: true,
+      studentId: true,
+      instructorId: true,
+      aircraftId: true,
+      scheduledStart: true,
+      scheduledEnd: true,
+      departureAirport: true,
+      destinationAirport: true,
+      route: true,
+      flightType: true,
+      status: true,
+      lessonNumber: true,
+      lessonTitle: true,
       student: {
-        include: {
-          preferredInstructor: true,
-          school: true,
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          trainingLevel: true,
+          currentStage: true,
+          availability: true,
+          preferredInstructorId: true,
+          lastFlightDate: true,
+          schoolId: true,
+          school: {
+            select: {
+              id: true,
+              name: true,
+              airportCode: true,
+            },
+          },
         },
       },
-      instructor: true,
+      instructor: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          availability: true,
+          schoolId: true,
+        },
+      },
       aircraft: {
-        include: {
-          aircraftType: true,
+        select: {
+          id: true,
+          tailNumber: true,
+          aircraftType: {
+            select: {
+              id: true,
+              make: true,
+              model: true,
+              category: true,
+            },
+          },
         },
       },
-      school: true,
+      school: {
+        select: {
+          id: true,
+          name: true,
+          airportCode: true,
+        },
+      },
     },
   });
 
@@ -67,6 +121,14 @@ export async function generateRescheduleSuggestions(
   const availableInstructors = await prisma.instructor.findMany({
     where: {
       schoolId: flight.schoolId,
+    },
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      email: true,
+      availability: true,
+      schoolId: true,
     },
   });
 
@@ -132,6 +194,11 @@ export async function generateRescheduleSuggestions(
       note: 'Route weather should be checked for cross-country flights',
     } : null,
   };
+
+  // Build route weather info string if available
+  const routeWeatherInfo = context.routeWeather
+    ? `\n\nROUTE WEATHER:\n- Route: ${context.routeWeather.route}\n- Note: ${context.routeWeather.note}`
+    : '';
 
   // Generate AI prompt
   const prompt = `You are an intelligent flight school scheduler. A flight lesson has been canceled due to weather.

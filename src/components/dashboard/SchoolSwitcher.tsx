@@ -38,29 +38,9 @@ export function SchoolSwitcher() {
     if (!authUser) return;
 
     try {
-      // Get user's school from their role
-      let schoolId: string | null = null;
-
-      if (authUser.role === 'student') {
-        const response = await fetch(`/api/students/${authUser.id}`);
-        if (response.ok) {
-          const student = await response.json();
-          schoolId = student.schoolId;
-        }
-      } else if (authUser.role === 'instructor') {
-        const response = await fetch(`/api/instructors/${authUser.id}`);
-        if (response.ok) {
-          const instructor = await response.json();
-          schoolId = instructor.schoolId;
-        }
-      } else if (authUser.role === 'admin') {
-        const response = await fetch(`/api/admins/${authUser.id}`);
-        if (response.ok) {
-          const admin = await response.json();
-          schoolId = admin.schoolId; // null for super admin
-        }
-      }
-
+      // Use schoolId directly from authUser (already populated for students/instructors)
+      // For admins, schoolId will be undefined/null for super admins
+      const schoolId = authUser.schoolId || null;
       setCurrentSchoolId(schoolId);
     } catch (err) {
       console.error('Error fetching current school:', err);

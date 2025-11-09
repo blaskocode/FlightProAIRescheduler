@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
           lte: future,
         },
         status: {
-          in: ['SCHEDULED', 'CONFIRMED'],
+          in: ['PENDING', 'CONFIRMED'],
         },
       },
       select: {

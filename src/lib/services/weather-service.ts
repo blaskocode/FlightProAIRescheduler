@@ -40,6 +40,8 @@ export function getWeatherMinimums(
         maxCrosswind: 5,
         maxGust: 0,
         allowPrecipitation: false,
+        allowThunderstorms: false,
+        allowIcing: false,
       };
       break;
     case 'MID_STUDENT':
@@ -50,6 +52,8 @@ export function getWeatherMinimums(
         maxCrosswind: 8,
         maxGust: 5,
         allowPrecipitation: true,
+        allowThunderstorms: false,
+        allowIcing: false,
       };
       break;
     case 'ADVANCED_STUDENT':
@@ -60,6 +64,8 @@ export function getWeatherMinimums(
         maxCrosswind: 10,
         maxGust: 8,
         allowPrecipitation: true,
+        allowThunderstorms: false,
+        allowIcing: false,
       };
       break;
     case 'PRIVATE_PILOT':
@@ -70,6 +76,8 @@ export function getWeatherMinimums(
         maxCrosswind: 15,
         maxGust: 10,
         allowPrecipitation: true,
+        allowThunderstorms: false,
+        allowIcing: false,
       };
       break;
     case 'INSTRUMENT_RATED':
@@ -80,6 +88,8 @@ export function getWeatherMinimums(
         maxCrosswind: 20,
         maxGust: 15,
         allowPrecipitation: true,
+        allowThunderstorms: false, // Never allow thunderstorms
+        allowIcing: false, // Never allow icing conditions
       };
       break;
     default:
@@ -90,6 +100,8 @@ export function getWeatherMinimums(
         maxCrosswind: 10,
         maxGust: 8,
         allowPrecipitation: true,
+        allowThunderstorms: false,
+        allowIcing: false,
       };
   }
 
@@ -173,6 +185,26 @@ export function checkWeatherSafety(
     unsafeCount++;
   }
 
+  // Check for thunderstorms (TS in METAR conditions)
+  // TS can appear as standalone "TS" or combined with precipitation like "TSRA" (thunderstorm with rain)
+  const hasThunderstorm = weather.conditions?.some(c => 
+    c === 'TS' || c.includes('TS')
+  );
+  
+  if (hasThunderstorm && !minimums.allowThunderstorms) {
+    reasons.push('Thunderstorms detected - unsafe for flight');
+    unsafeCount++;
+  }
+
+  // Check for icing conditions
+  // Icing occurs when: temperature between -10°C and 0°C with visible moisture/precipitation
+  // Or temperature < -10°C with visible moisture (supercooled water)
+  const hasIcingConditions = checkIcingConditions(weather, minimums);
+  if (hasIcingConditions && !minimums.allowIcing) {
+    reasons.push('Icing conditions detected - unsafe for flight');
+    unsafeCount++;
+  }
+
   // Determine result
   let result: 'SAFE' | 'MARGINAL' | 'UNSAFE';
   if (unsafeCount > 0) {
@@ -191,6 +223,52 @@ export function checkWeatherSafety(
     confidence,
     reasons: reasons.length > 0 ? reasons : ['Weather conditions are safe for flight'],
   };
+}
+
+/**
+ * Check for icing conditions based on temperature and moisture
+ * Icing occurs when:
+ * - Temperature between -10°C and 0°C with visible moisture/precipitation
+ * - Temperature < -10°C with visible moisture (supercooled water droplets)
+ * - Temperature > 0°C typically no structural icing, but can have carburetor icing
+ */
+function checkIcingConditions(
+  weather: WeatherData,
+  minimums: WeatherMinimums
+): boolean {
+  // Temperature is a number in WeatherData, not an object
+  const tempC = typeof weather.temperature === 'number' ? weather.temperature : null;
+  
+  if (tempC === null) {
+    // Can't determine without temperature
+    return false;
+  }
+
+  // Check for visible moisture indicators
+  const hasVisibleMoisture = weather.conditions?.some(c => 
+    ['RA', 'SN', 'DZ', 'FZRA', 'FZSN', 'PL', 'SG', 'IC', 'GR', 'GS'].includes(c)
+  ) || weather.clouds?.some(c => c.cover === 'OVC' || c.cover === 'BKN');
+
+  // Structural icing conditions (most dangerous)
+  // Temperature between -10°C and 0°C with visible moisture
+  if (tempC >= -10 && tempC <= 0 && hasVisibleMoisture) {
+    return true;
+  }
+
+  // Freezing precipitation (FZRA, FZSN, PL) at any temperature below freezing
+  if (tempC < 0 && weather.conditions?.some(c => 
+    ['FZRA', 'FZSN', 'PL'].includes(c)
+  )) {
+    return true;
+  }
+
+  // Supercooled water droplets (temperature < -10°C with visible moisture)
+  // Less common but still dangerous
+  if (tempC < -10 && hasVisibleMoisture) {
+    return true;
+  }
+
+  return false;
 }
 
 /**

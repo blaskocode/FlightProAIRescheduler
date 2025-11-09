@@ -16,6 +16,7 @@ export interface AuthUser {
   studentId?: string;
   instructorId?: string;
   adminId?: string;
+  schoolId?: string;
 }
 
 /**
@@ -62,7 +63,7 @@ export async function getUserRole(firebaseUid: string): Promise<AuthUser | null>
     // Check student
     const student = await prisma.student.findUnique({
       where: { firebaseUid },
-      select: { id: true, email: true },
+      select: { id: true, email: true, schoolId: true },
     });
     if (student) {
       return {
@@ -70,13 +71,14 @@ export async function getUserRole(firebaseUid: string): Promise<AuthUser | null>
         email: student.email,
         role: 'student',
         studentId: student.id,
+        schoolId: student.schoolId || undefined,
       };
     }
 
     // Check instructor
     const instructor = await prisma.instructor.findUnique({
       where: { firebaseUid },
-      select: { id: true, email: true },
+      select: { id: true, email: true, schoolId: true },
     });
     if (instructor) {
       return {
@@ -84,6 +86,7 @@ export async function getUserRole(firebaseUid: string): Promise<AuthUser | null>
         email: instructor.email,
         role: 'instructor',
         instructorId: instructor.id,
+        schoolId: instructor.schoolId || undefined,
       };
     }
 
@@ -98,9 +101,12 @@ export async function getUserRole(firebaseUid: string): Promise<AuthUser | null>
         email: admin.email,
         role: 'admin',
         adminId: admin.id,
+        // Admins don't have schoolId (they're system-level)
       };
     }
 
+    // Debug: Check if user exists with different casing or check all tables
+    console.log(`User not found with firebaseUid: ${firebaseUid}`);
     return null;
   } catch (error) {
     console.error('Error getting user role:', error);

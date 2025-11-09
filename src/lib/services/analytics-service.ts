@@ -104,12 +104,12 @@ export async function calculateWeatherImpact(
   let rescheduleCount = 0;
 
   for (const request of rescheduleRequests) {
-    const originalFlight = await prisma.flight.findUnique({
-      where: { id: request.flightId },
-    });
+    // Use instructorConfirmedAt if available, otherwise studentConfirmedAt
+    const confirmedAt = request.instructorConfirmedAt || request.studentConfirmedAt;
     
-    if (originalFlight && request.acceptedAt) {
-      const timeDiff = request.acceptedAt.getTime() - originalFlight.scheduledStart.getTime();
+    if (confirmedAt) {
+      // Time from request creation (conflict detection) to confirmation
+      const timeDiff = confirmedAt.getTime() - request.createdAt.getTime();
       totalRescheduleTime += timeDiff / (1000 * 60 * 60); // Convert to hours
       rescheduleCount++;
     }
@@ -161,7 +161,7 @@ export async function calculateAircraftUtilization(
 
   return aircraft.map(ac => {
     const scheduledFlights = ac.flights.filter(f => 
-      ['SCHEDULED', 'CONFIRMED', 'COMPLETED'].includes(f.status)
+      ['PENDING', 'CONFIRMED', 'COMPLETED'].includes(f.status)
     );
     
     const completedFlights = ac.flights.filter(f => f.status === 'COMPLETED');
@@ -204,19 +204,32 @@ export async function calculateInstructorEfficiency(
 ): Promise<InstructorEfficiency[]> {
   const instructors = await prisma.instructor.findMany({
     where: { schoolId },
-    include: {
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
       flights: {
         where: {
           scheduledStart: { gte: startDate, lte: endDate },
         },
+        select: {
+          id: true,
+          scheduledStart: true,
+          scheduledEnd: true,
+          status: true,
+        },
       },
-      preferredByStudents: true,
+      preferredByStudents: {
+        select: {
+          id: true,
+        },
+      },
     },
   });
 
   return instructors.map(inst => {
     const scheduledFlights = inst.flights.filter(f =>
-      ['SCHEDULED', 'CONFIRMED', 'COMPLETED'].includes(f.status)
+      ['PENDING', 'CONFIRMED', 'COMPLETED'].includes(f.status)
     );
     
     const completedFlights = inst.flights.filter(f => f.status === 'COMPLETED');
@@ -256,10 +269,12 @@ export async function calculateStudentProgress(
 ): Promise<StudentProgressMetrics> {
   const students = await prisma.student.findMany({
     where: { schoolId },
-    include: {
+    select: {
+      id: true,
       progress: {
-        include: {
-          lesson: true,
+        select: {
+          id: true,
+          status: true,
         },
       },
     },

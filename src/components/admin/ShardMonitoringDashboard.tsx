@@ -34,6 +34,8 @@ export function ShardMonitoringDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [rebalancing, setRebalancing] = useState(false);
+  const [federating, setFederating] = useState(false);
+  const [federateResults, setFederateResults] = useState<any>(null);
 
   useEffect(() => {
     fetchStatus();
@@ -97,6 +99,44 @@ export function ShardMonitoringDashboard() {
       alert(`Error: ${err.message}`);
     } finally {
       setRebalancing(false);
+    }
+  }
+
+  async function handleFederateQuery(queryType: 'schools' | 'flights' | 'metrics') {
+    try {
+      setFederating(true);
+      setError(null);
+      const uid = localStorage.getItem('firebase_uid'); // Temporary
+      
+      const params = new URLSearchParams({
+        uid: uid || '',
+        type: queryType,
+      });
+
+      // Add date range for flights and metrics
+      if (queryType === 'flights' || queryType === 'metrics') {
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setDate(endDate.getDate() - 30);
+        params.append('startDate', startDate.toISOString());
+        params.append('endDate', endDate.toISOString());
+      }
+
+      const response = await fetch(`/api/sharding/federate?${params.toString()}`, {
+        method: 'GET',
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setFederateResults({ ...data, queryType });
+      } else {
+        const errorData = await response.json();
+        setError(errorData.error || 'Failed to execute federated query');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to execute federated query');
+    } finally {
+      setFederating(false);
     }
   }
 
@@ -218,6 +258,81 @@ export function ShardMonitoringDashboard() {
           <p className="text-sm text-gray-600">
             {new Date(status.timestamp).toLocaleString()}
           </p>
+        </CardContent>
+      </Card>
+
+      {/* Federated Query */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Federated Queries</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-gray-600">
+            Execute queries across all shards to get aggregated data
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <Button
+              onClick={() => handleFederateQuery('schools')}
+              disabled={federating}
+              variant="outline"
+              className="w-full"
+            >
+              {federating ? 'Querying...' : 'Get All Schools'}
+            </Button>
+            <Button
+              onClick={() => handleFederateQuery('flights')}
+              disabled={federating}
+              variant="outline"
+              className="w-full"
+            >
+              {federating ? 'Querying...' : 'Get Flight Count'}
+            </Button>
+            <Button
+              onClick={() => handleFederateQuery('metrics')}
+              disabled={federating}
+              variant="outline"
+              className="w-full"
+            >
+              {federating ? 'Querying...' : 'Get Aggregated Metrics'}
+            </Button>
+          </div>
+
+          {federateResults && (
+            <div className="mt-4 p-4 border rounded-lg bg-gray-50">
+              <h4 className="font-semibold mb-2">Results ({federateResults.queryType}):</h4>
+              <div className="text-sm space-y-2">
+                {federateResults.queryType === 'schools' && (
+                  <>
+                    <p>Total Schools: {federateResults.count || 0}</p>
+                    {federateResults.schools && federateResults.schools.length > 0 && (
+                      <div className="mt-2 max-h-64 overflow-y-auto">
+                        <pre className="text-xs bg-white p-2 rounded border">
+                          {JSON.stringify(federateResults.schools.slice(0, 10), null, 2)}
+                          {federateResults.schools.length > 10 && `\n... and ${federateResults.schools.length - 10} more schools`}
+                        </pre>
+                      </div>
+                    )}
+                  </>
+                )}
+                {federateResults.queryType === 'flights' && (
+                  <p>Total Flights: {federateResults.count || 0}</p>
+                )}
+                {federateResults.queryType === 'metrics' && (
+                  <div className="mt-2 max-h-64 overflow-y-auto">
+                    <pre className="text-xs bg-white p-2 rounded border">
+                      {JSON.stringify(federateResults, null, 2)}
+                    </pre>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {error && (
+            <div className="mt-4 p-3 bg-red-50 rounded-md">
+              <p className="text-sm text-red-800">{error}</p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

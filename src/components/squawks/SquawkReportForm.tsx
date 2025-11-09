@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -26,6 +27,7 @@ export function SquawkReportForm({
   onSuccess,
   onCancel,
 }: SquawkReportFormProps) {
+  const { user, authUser } = useAuth();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [severity, setSeverity] = useState<'MINOR' | 'MAJOR' | 'GROUNDING'>('MINOR');
@@ -38,17 +40,23 @@ export function SquawkReportForm({
     setError(null);
 
     try {
+      if (!user) {
+        throw new Error('Please log in to report a squawk');
+      }
+
+      const token = await user.getIdToken();
       const response = await fetch('/api/squawks', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
           aircraftId,
           title,
           description,
           severity,
-          reportedBy: 'current-user-id', // TODO: Get from auth context
+          reportedBy: authUser?.instructorId || authUser?.studentId || 'system',
         }),
       });
 

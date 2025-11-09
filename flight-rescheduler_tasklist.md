@@ -1887,6 +1887,338 @@ function getConnectionForSchool(schoolId: string): PrismaClient {
 
 ---
 
+## Phase 4: Post-MVP Enhancements & GOLD PRD Gaps (Week 4+)
+
+### PR-31: GOLD PRD Gap Fixes (Critical)
+**Branch**: `feature/gold-prd-gaps`  
+**Estimated Time**: 6-8 hours  
+**Dependencies**: PR-04, PR-06  
+**Priority**: **CRITICAL** (GOLD PRD compliance)
+
+**Tasks:**
+- [ ] **Thunderstorm & Icing Detection for Instrument-Rated Pilots**
+  - [ ] Add explicit METAR parsing for thunderstorm (TS) conditions
+  - [ ] Add temperature + moisture analysis for icing conditions
+  - [ ] Update `checkWeatherSafety()` to reject TS/icing for instrument-rated pilots
+  - [ ] Add TS/icing checks to weather check job
+  - [ ] Update weather minimums logic to include TS/icing rules
+  - [ ] Add TS/icing indicators to weather alerts UI
+- [ ] **Average Rescheduling Time Dashboard Metric**
+  - [ ] Calculate average time from conflict detection to confirmation
+  - [ ] Add metric to admin dashboard (`MetricsDashboard`)
+  - [ ] Display in analytics section with trend chart
+  - [ ] Add API endpoint for rescheduling time analytics
+- [x] **Demo Video Creation** ✅
+  - [x] Create 5-10 minute demo video script
+  - [x] Record full workflow demonstration
+  - [x] Edit and add narration
+  - [x] Upload to YouTube/Vimeo
+  - [ ] Add link to README.md (if not already added)
+
+**Acceptance Criteria:**
+- ✅ Thunderstorm detection works for instrument-rated pilots
+- ✅ Icing detection works for instrument-rated pilots
+- ✅ Average rescheduling time displayed in dashboard
+- ✅ Demo video created and linked
+
+**Files to Create/Modify:**
+- `src/lib/services/weather-service.ts` (add TS/icing detection)
+- `src/components/dashboard/MetricsDashboard.tsx` (add rescheduling time metric)
+- `src/app/api/analytics/rescheduling-time/route.ts` (new endpoint)
+- `docs/DEMO_VIDEO_SCRIPT.md` (new file)
+- `README.md` (add video link)
+
+---
+
+### PR-32: Visual Weather Dashboard with Maps
+**Branch**: `feature/visual-weather-dashboard`  
+**Estimated Time**: 8-10 hours  
+**Dependencies**: PR-04  
+**Priority**: **HIGH** (Market Research Recommendation)
+
+**Tasks:**
+- [ ] **Map Integration**
+  - [ ] Install map library (Leaflet or Google Maps)
+  - [ ] Create map component for weather visualization
+  - [ ] Display airports with weather conditions
+  - [ ] Color-code airports by weather status (green/yellow/red)
+  - [ ] Add weather popup on airport click
+- [ ] **Weather Dashboard Enhancement**
+  - [ ] Create `WeatherMapDashboard` component
+  - [ ] Integrate with existing weather alerts
+  - [ ] Add route visualization for cross-country flights
+  - [ ] Show waypoint weather conditions on map
+  - [ ] Add toggle for map/list view
+- [ ] **Real-Time Updates**
+  - [ ] Update map markers when weather changes
+  - [ ] Add refresh button for manual updates
+  - [ ] Show last update timestamp
+
+**Acceptance Criteria:**
+- ✅ Map displays all airports with weather status
+- ✅ Clicking airport shows detailed weather
+- ✅ Routes visualized with waypoint weather
+- ✅ Real-time updates work
+
+**Files to Create/Modify:**
+- `src/components/dashboard/WeatherMapDashboard.tsx` (new)
+- `src/components/dashboard/WeatherMap.tsx` (new)
+- `src/app/dashboard/page.tsx` (integrate map view)
+- `package.json` (add map library)
+
+---
+
+### PR-33: Calendar Conflict Detection UI
+**Branch**: `feature/calendar-conflict-ui`  
+**Estimated Time**: 4-6 hours  
+**Dependencies**: PR-28  
+**Priority**: **HIGH** (Market Research Recommendation)
+
+**Tasks:**
+- [ ] **Conflict Detection in Reschedule Modal**
+  - [ ] Check calendar conflicts when showing reschedule options
+  - [ ] Display conflict warnings on conflicting options
+  - [ ] Highlight conflicts in red/yellow
+  - [ ] Show conflicting event details (title, time)
+- [ ] **Conflict Prevention**
+  - [ ] Call `/api/calendar/conflicts` for each reschedule option
+  - [ ] Filter out options with conflicts (or mark as unavailable)
+  - [ ] Add "Check Calendar" toggle in reschedule modal
+- [ ] **Calendar Conflict Component**
+  - [ ] Create `CalendarConflictIndicator` component
+  - [ ] Display conflicts in flight list
+  - [ ] Add conflict badge to flight cards
+  - [ ] Show conflict details in tooltip
+
+**Acceptance Criteria:**
+- ✅ Reschedule options show calendar conflicts
+- ✅ Conflicts are clearly marked
+- ✅ Conflicting options can be filtered out
+- ✅ Flight list shows conflict indicators
+
+**Files to Create/Modify:**
+- `src/components/flights/RescheduleModal.tsx` (add conflict detection)
+- `src/components/dashboard/CalendarConflictIndicator.tsx` (new)
+- `src/components/dashboard/FlightCard.tsx` (add conflict badge)
+- `src/app/api/calendar/conflicts/route.ts` (already exists, ensure it works)
+
+---
+
+### PR-34: Route Visualization Component
+**Branch**: `feature/route-visualization`  
+**Estimated Time**: 6-8 hours  
+**Dependencies**: PR-14, PR-32  
+**Priority**: **HIGH** (Market Research Recommendation)
+
+**Tasks:**
+- [ ] **Route Display Component**
+  - [ ] Create `RouteVisualization` component
+  - [ ] Display route on map with waypoints
+  - [ ] Show weather conditions at each waypoint
+  - [ ] Color-code waypoints by weather status
+  - [ ] Add route details panel (distance, estimated time)
+- [ ] **Integration with Flight Details**
+  - [ ] Add route visualization to flight detail view
+  - [ ] Show route in reschedule modal for cross-country flights
+  - [ ] Display route in weather alerts
+- [ ] **Interactive Features**
+  - [ ] Click waypoint to see detailed weather
+  - [ ] Hover to see waypoint info
+  - [ ] Toggle between map and list view
+
+**Acceptance Criteria:**
+- ✅ Routes displayed on map with waypoints
+- ✅ Weather shown at each waypoint
+- ✅ Interactive waypoint details
+- ✅ Integrated into flight views
+
+**Files to Create/Modify:**
+- `src/components/flights/RouteVisualization.tsx` (new)
+- `src/components/dashboard/FlightCard.tsx` (add route view)
+- `src/components/flights/RescheduleModal.tsx` (add route for XC flights)
+- `src/app/api/weather/route-check/route.ts` (already exists)
+
+---
+
+### PR-35: Enhanced Mobile Experience
+**Branch**: `feature/enhanced-mobile`  
+**Estimated Time**: 8-10 hours  
+**Dependencies**: PR-25  
+**Priority**: **MEDIUM** (Market Research Recommendation)
+
+**Tasks:**
+- [ ] **Quick Actions for Mobile**
+  - [ ] Add swipe gestures for reschedule actions
+  - [ ] Create quick reschedule button (one-tap)
+  - [ ] Add pull-to-refresh for weather updates
+  - [ ] Optimize modals for mobile (full-screen on small devices)
+- [ ] **Mobile-Optimized Reschedule Flow**
+  - [ ] Streamline reschedule modal for mobile
+  - [ ] Add "Quick Accept" option (accept first suggestion)
+  - [ ] Show reschedule options in cards (easier to swipe)
+  - [ ] Add haptic feedback for actions
+- [ ] **Offline Support**
+  - [ ] Cache reschedule suggestions offline
+  - [ ] Queue actions when offline
+  - [ ] Sync when connection restored
+  - [ ] Show offline indicator
+
+**Acceptance Criteria:**
+- ✅ Swipe gestures work for reschedule
+- ✅ Quick actions available on mobile
+- ✅ Modals optimized for small screens
+- ✅ Offline support functional
+
+**Files to Create/Modify:**
+- `src/components/mobile/SwipeableCard.tsx` (enhance existing)
+- `src/components/flights/RescheduleModal.tsx` (mobile optimization)
+- `src/components/mobile/QuickRescheduleButton.tsx` (new)
+- `src/hooks/useOfflineDetection.ts` (enhance existing)
+
+---
+
+### PR-36: Smart Notification Preferences
+**Branch**: `feature/notification-preferences`  
+**Estimated Time**: 6-8 hours  
+**Dependencies**: PR-08, PR-27  
+**Priority**: **MEDIUM** (Market Research Recommendation)
+
+**Tasks:**
+- [ ] **Notification Preferences UI**
+  - [ ] Create `NotificationPreferences` component
+  - [ ] Add preferences page (`/settings/notifications`)
+  - [ ] Allow users to configure channels (email/SMS/push)
+  - [ ] Add timing preferences (immediate/daily digest/weekly)
+  - [ ] Per-event type preferences (weather/reschedule/confirmation)
+- [ ] **Backend Support**
+  - [ ] Add notification preferences to user model
+  - [ ] Update notification service to respect preferences
+  - [ ] Add API endpoint for preferences (`/api/notifications/preferences`)
+  - [ ] Store preferences in database
+- [ ] **Smart Defaults**
+  - [ ] Set intelligent defaults based on user role
+  - [ ] Suggest preferences based on usage patterns
+  - [ ] Add "Quiet Hours" feature
+
+**Acceptance Criteria:**
+- ✅ Users can configure notification channels
+- ✅ Preferences respected by notification service
+- ✅ Per-event type preferences work
+- ✅ Quiet hours functional
+
+**Files to Create/Modify:**
+- `src/components/settings/NotificationPreferences.tsx` (new)
+- `src/app/settings/notifications/page.tsx` (new)
+- `src/app/api/notifications/preferences/route.ts` (new)
+- `prisma/schema.prisma` (add notification preferences)
+- `src/lib/services/notification-service.ts` (respect preferences)
+
+---
+
+### PR-37: Backend APIs - Missing Frontend (Part 1)
+**Branch**: `feature/backend-apis-frontend-1`  
+**Estimated Time**: 10-12 hours  
+**Dependencies**: Various  
+**Priority**: **MEDIUM** (Complete existing features)
+
+**Tasks:**
+- [ ] **Weather Analytics Frontend**
+  - [ ] Create UI for `/api/weather/analytics/monthly-patterns`
+  - [ ] Create UI for `/api/weather/analytics/airport-patterns`
+  - [ ] Create UI for `/api/weather/analytics/cancellation-trends`
+  - [ ] Create UI for `/api/weather/analytics/optimal-windows`
+  - [ ] Create UI for `/api/weather/analytics/insights`
+  - [ ] Create UI for `/api/weather/analytics/student-report/[studentId]`
+  - [ ] Integrate into `WeatherAnalyticsDashboard`
+- [ ] **Currency Tracking Frontend**
+  - [ ] Create UI for `/api/currency/approaching-expiry`
+  - [ ] Create UI for `/api/currency/prioritized`
+  - [ ] Enhance `CurrencyDashboard` with new data
+- [ ] **Maintenance Frontend**
+  - [ ] Create UI for `/api/maintenance/due`
+  - [ ] Create UI for `/api/maintenance/history/[aircraftId]`
+  - [ ] Enhance `MaintenanceDashboard` with new features
+
+**Acceptance Criteria:**
+- ✅ All weather analytics endpoints have UI
+- ✅ Currency tracking fully integrated
+- ✅ Maintenance features complete
+
+**Files to Create/Modify:**
+- `src/components/dashboard/WeatherAnalyticsDashboard.tsx` (enhance)
+- `src/components/dashboard/CurrencyDashboard.tsx` (enhance)
+- `src/components/dashboard/MaintenanceDashboard.tsx` (enhance)
+- Various new sub-components for analytics
+
+---
+
+### PR-38: Backend APIs - Missing Frontend (Part 2)
+**Branch**: `feature/backend-apis-frontend-2`  
+**Estimated Time**: 8-10 hours  
+**Dependencies**: Various  
+**Priority**: **MEDIUM** (Complete existing features)
+
+**Tasks:**
+- [ ] **Predictions Frontend**
+  - [ ] Create UI for `/api/predictions/cancellation`
+  - [ ] Create UI for `/api/predictions/performance`
+  - [ ] Enhance `CancellationPredictionCard` with performance metrics
+  - [ ] Add prediction confidence visualization
+- [ ] **Discovery Flights Frontend**
+  - [ ] Create UI for `/api/discovery-flights/[id]/survey`
+  - [ ] Create UI for `/api/discovery-flights/[id]/convert`
+  - [ ] Enhance `DiscoveryFlightDashboard` with survey and conversion
+- [ ] **Cache Management Frontend**
+  - [ ] Create UI for `/api/weather/cache/stats`
+  - [ ] Create UI for `/api/weather/cache/warm`
+  - [ ] Create UI for `/api/weather/cache/invalidate`
+  - [ ] Add to admin settings page
+
+**Acceptance Criteria:**
+- ✅ Predictions fully integrated
+- ✅ Discovery flights workflow complete
+- ✅ Cache management accessible
+
+**Files to Create/Modify:**
+- `src/components/dashboard/CancellationPredictionCard.tsx` (enhance)
+- `src/components/admin/DiscoveryFlightDashboard.tsx` (enhance)
+- `src/components/admin/SettingsPage.tsx` (add cache management)
+- Various new components
+
+---
+
+### PR-39: Backend APIs - Missing Frontend (Part 3)
+**Branch**: `feature/backend-apis-frontend-3`  
+**Estimated Time**: 6-8 hours  
+**Dependencies**: Various  
+**Priority**: **LOW** (Admin/Advanced Features)
+
+**Tasks:**
+- [ ] **Sharding Frontend** (Super Admin Only)
+  - [ ] Create UI for `/api/sharding/status`
+  - [ ] Create UI for `/api/sharding/federate`
+  - [ ] Enhance `ShardMonitoringDashboard` with federated queries
+- [ ] **Database Health Frontend** (Admin Only)
+  - [ ] Create UI for `/api/db/health`
+  - [ ] Create UI for `/api/db/stats`
+  - [ ] Add to admin dashboard
+- [ ] **Audit Logs Frontend**
+  - [ ] Enhance `AuditLogViewer` with filtering
+  - [ ] Add export functionality
+  - [ ] Add search capabilities
+
+**Acceptance Criteria:**
+- ✅ Sharding monitoring complete
+- ✅ Database health visible
+- ✅ Audit logs fully functional
+
+**Files to Create/Modify:**
+- `src/components/admin/ShardMonitoringDashboard.tsx` (enhance)
+- `src/components/admin/DatabaseHealth.tsx` (new)
+- `src/components/admin/AuditLogViewer.tsx` (enhance)
+
+---
+
 ## Bonus Features (If Time Permits)
 
 ### PR-27: SMS Notifications (Twilio) ✅ COMPLETE

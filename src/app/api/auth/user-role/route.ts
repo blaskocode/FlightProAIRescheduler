@@ -11,9 +11,17 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'UID required' }, { status: 400 });
     }
     
-    const userRole = await getUserRole(uid);
+    // Try to get user role with a small retry in case of timing issues
+    let userRole = await getUserRole(uid);
+    
+    // If not found, wait a bit and try again (handles database transaction timing)
+    if (!userRole) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      userRole = await getUserRole(uid);
+    }
     
     if (!userRole) {
+      console.warn(`User not found in database for UID: ${uid}`);
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 

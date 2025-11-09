@@ -548,7 +548,7 @@ async function main() {
         lessonNumber: student.currentLesson,
         lessonTitle: lessons.find(l => l.lessonNumber === student.currentLesson)?.title || 'Flight Lesson',
         departureAirport: student.schoolId === school1.id ? 'KAUS' : student.schoolId === school2.id ? 'KDAL' : 'KHOU',
-        status: i < 5 ? 'CONFIRMED' : 'SCHEDULED',
+        status: i < 5 ? 'CONFIRMED' : 'PENDING',
       },
     });
   }

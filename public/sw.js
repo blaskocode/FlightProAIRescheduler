@@ -1,8 +1,6 @@
 // Service Worker for PWA
-const CACHE_NAME = 'flightpro-v1';
+const CACHE_NAME = 'flightpro-v3'; // Incremented to clear old cache
 const urlsToCache = [
-  '/',
-  '/dashboard',
   '/manifest.json',
 ];
 
@@ -10,7 +8,9 @@ const urlsToCache = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(urlsToCache);
+      return cache.addAll(urlsToCache).catch((err) => {
+        console.warn('Service worker cache addAll failed:', err);
+      });
     })
   );
   self.skipWaiting();
@@ -32,10 +32,64 @@ self.addEventListener('activate', (event) => {
 
 // Fetch event - serve from cache, fallback to network
 self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+  
+  // Skip caching for:
+  // - API routes
+  // - Admin routes (should always be fresh)
+  // - Home page
+  // - Next.js internal routes (_next)
+  // - Non-GET requests
+  if (
+    url.pathname.startsWith('/api/') ||
+    url.pathname.startsWith('/admin/') ||
+    url.pathname === '/' ||
+    url.pathname === '/index.html' ||
+    url.pathname.startsWith('/_next/') ||
+    event.request.method !== 'GET'
+  ) {
+    // Always fetch fresh from network, don't use cache
+    event.respondWith(
+      fetch(event.request).catch((err) => {
+        console.warn('Service worker fetch failed:', err);
+        // Return a basic error response instead of failing completely
+        return new Response('Network error', {
+          status: 408,
+          statusText: 'Request Timeout',
+        });
+      })
+    );
+    return;
+  }
+  
+  // For other routes, try cache first, then network
   event.respondWith(
     caches.match(event.request).then((response) => {
-      // Return cached version or fetch from network
-      return response || fetch(event.request);
+      if (response) {
+        return response;
+      }
+      // Fetch from network and cache successful responses
+      return fetch(event.request)
+        .then((response) => {
+          // Only cache successful responses
+          if (response.status === 200) {
+            const responseToCache = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseToCache).catch((err) => {
+                console.warn('Service worker cache put failed:', err);
+              });
+            });
+          }
+          return response;
+        })
+        .catch((err) => {
+          console.warn('Service worker fetch failed:', err);
+          // Return a basic error response
+          return new Response('Network error', {
+            status: 408,
+            statusText: 'Request Timeout',
+          });
+        });
     })
   );
 });

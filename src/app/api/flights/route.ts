@@ -57,17 +57,29 @@ export async function GET(request: NextRequest) {
       console.warn('User has no schoolId - this may cause issues');
     }
 
-    // If user can only view own flights, filter accordingly
-    if (!canViewAll && canViewOwn) {
-      if (authUser.role === 'student') {
-        where.studentId = authUser.studentId;
-      } else if (authUser.role === 'instructor') {
+    // Always filter by role-specific ownership (unless admin)
+    // Instructors should ONLY see their own flights
+    // Students should ONLY see their own flights
+    // Admins can see all flights
+    if (authUser.role === 'student' && authUser.studentId) {
+      // Students always see only their own flights
+      where.studentId = authUser.studentId;
+    } else if (authUser.role === 'instructor' && authUser.instructorId) {
+      // Instructors always see only their own flights (unless they're an admin)
+      if (authUser.role !== 'admin' && authUser.role !== 'super_admin') {
         where.instructorId = authUser.instructorId;
       }
     }
+    // Admins and super_admins can see all flights (no filtering)
 
-    if (studentId) where.studentId = studentId;
-    if (instructorId) where.instructorId = instructorId;
+    // Allow query params to further filter (but don't override role-based filtering)
+    // These are for admin use cases where they want to filter by specific student/instructor
+    if (studentId && authUser.role === 'admin') {
+      where.studentId = studentId;
+    }
+    if (instructorId && authUser.role === 'admin') {
+      where.instructorId = instructorId;
+    }
     if (status) where.status = status;
     if (startDate || endDate) {
       where.scheduledStart = {};

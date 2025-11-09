@@ -24,7 +24,7 @@ export async function generatePredictionsForUpcomingFlights() {
           lte: sevenDaysFromNow,
         },
         status: {
-          in: ['SCHEDULED', 'CONFIRMED'],
+          in: ['PENDING', 'CONFIRMED'],
         },
         // Only update predictions older than 24 hours or missing
         OR: [

@@ -18,12 +18,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if user already exists
+    // Check if user already exists by firebaseUid
     let existingUser = await prisma.student.findUnique({
       where: { firebaseUid: uid },
     });
 
     if (existingUser) {
+      console.log(`Found existing student by firebaseUid: ${uid}`);
       return NextResponse.json({
         success: true,
         message: 'User already exists',
@@ -34,12 +35,37 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Check instructor
+    // Also check by email in case firebaseUid is missing or different
+    existingUser = await prisma.student.findUnique({
+      where: { email: email },
+    });
+
+    if (existingUser) {
+      // Update firebaseUid if it's missing or different
+      if (!existingUser.firebaseUid || existingUser.firebaseUid !== uid) {
+        console.log(`Updating student firebaseUid from ${existingUser.firebaseUid} to ${uid}`);
+        await prisma.student.update({
+          where: { id: existingUser.id },
+          data: { firebaseUid: uid },
+        });
+      }
+      return NextResponse.json({
+        success: true,
+        message: 'User already exists (updated firebaseUid)',
+        user: {
+          id: existingUser.id,
+          role: 'student',
+        },
+      });
+    }
+
+    // Check instructor by firebaseUid
     existingUser = await prisma.instructor.findUnique({
       where: { firebaseUid: uid },
     });
 
     if (existingUser) {
+      console.log(`Found existing instructor by firebaseUid: ${uid}`);
       return NextResponse.json({
         success: true,
         message: 'User already exists',
@@ -50,15 +76,64 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Check admin
+    // Also check by email
+    existingUser = await prisma.instructor.findUnique({
+      where: { email: email },
+    });
+
+    if (existingUser) {
+      // Update firebaseUid if it's missing or different
+      if (!existingUser.firebaseUid || existingUser.firebaseUid !== uid) {
+        console.log(`Updating instructor firebaseUid from ${existingUser.firebaseUid} to ${uid}`);
+        await prisma.instructor.update({
+          where: { id: existingUser.id },
+          data: { firebaseUid: uid },
+        });
+      }
+      return NextResponse.json({
+        success: true,
+        message: 'User already exists (updated firebaseUid)',
+        user: {
+          id: existingUser.id,
+          role: 'instructor',
+        },
+      });
+    }
+
+    // Check admin by firebaseUid
     existingUser = await prisma.admin.findUnique({
       where: { firebaseUid: uid },
     });
 
     if (existingUser) {
+      console.log(`Found existing admin by firebaseUid: ${uid}`);
       return NextResponse.json({
         success: true,
         message: 'User already exists',
+        user: {
+          id: existingUser.id,
+          role: 'admin',
+        },
+      });
+    }
+
+    // Also check by email
+    existingUser = await prisma.admin.findUnique({
+      where: { email: email },
+    });
+
+    if (existingUser) {
+      // Update firebaseUid if it's missing or different
+      if (!existingUser.firebaseUid || existingUser.firebaseUid !== uid) {
+        console.log(`Updating admin firebaseUid from ${existingUser.firebaseUid} to ${uid}`);
+        await prisma.admin.update({
+          where: { id: existingUser.id },
+          data: { firebaseUid: uid },
+        });
+      }
+      return NextResponse.json({
+        success: true,
+        message: 'User already exists (updated firebaseUid)',
         user: {
           id: existingUser.id,
           role: 'admin',
@@ -90,6 +165,8 @@ export async function POST(request: NextRequest) {
           phone: phone || '',
         },
       });
+
+      console.log(`Created student with firebaseUid: ${uid}, id: ${student.id}, email: ${email}`);
 
       return NextResponse.json({
         success: true,
@@ -161,10 +238,59 @@ export async function POST(request: NextRequest) {
     
     // Handle unique constraint violations (user already exists)
     if (error.code === 'P2002') {
-      return NextResponse.json(
-        { error: 'User with this email or Firebase UID already exists' },
-        { status: 409 }
-      );
+      // User already exists - try to find and return existing user
+      try {
+        // Check all tables for existing user
+        const existingStudent = await prisma.student.findUnique({
+          where: { firebaseUid: uid },
+        });
+        if (existingStudent) {
+          return NextResponse.json({
+            success: true,
+            message: 'User already exists',
+            user: {
+              id: existingStudent.id,
+              role: 'student',
+            },
+          });
+        }
+
+        const existingInstructor = await prisma.instructor.findUnique({
+          where: { firebaseUid: uid },
+        });
+        if (existingInstructor) {
+          return NextResponse.json({
+            success: true,
+            message: 'User already exists',
+            user: {
+              id: existingInstructor.id,
+              role: 'instructor',
+            },
+          });
+        }
+
+        const existingAdmin = await prisma.admin.findUnique({
+          where: { firebaseUid: uid },
+        });
+        if (existingAdmin) {
+          return NextResponse.json({
+            success: true,
+            message: 'User already exists',
+            user: {
+              id: existingAdmin.id,
+              role: 'admin',
+            },
+          });
+        }
+      } catch (findError) {
+        console.error('Error finding existing user:', findError);
+      }
+      
+      // If we can't find the user, return success anyway (user exists somewhere)
+      return NextResponse.json({
+        success: true,
+        message: 'User already exists',
+      });
     }
 
     return NextResponse.json(

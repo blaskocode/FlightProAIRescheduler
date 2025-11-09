@@ -18,16 +18,61 @@ interface PredictionResult {
 
 interface CancellationPredictionCardProps {
   flightId: string;
+  showPerformanceMetrics?: boolean;
+  schoolId?: string;
 }
 
-export function CancellationPredictionCard({ flightId }: CancellationPredictionCardProps) {
+interface PerformanceMetrics {
+  totalPredictions: number;
+  accuratePredictions: number;
+  accuracy: number;
+  precision: number;
+  recall: number;
+  falsePositives: number;
+  falseNegatives: number;
+}
+
+export function CancellationPredictionCard({ 
+  flightId, 
+  showPerformanceMetrics = false,
+  schoolId 
+}: CancellationPredictionCardProps) {
   const [prediction, setPrediction] = useState<PredictionResult | null>(null);
+  const [performance, setPerformance] = useState<PerformanceMetrics | null>(null);
   const [loading, setLoading] = useState(false);
+  const [loadingPerformance, setLoadingPerformance] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchPrediction();
-  }, [flightId]);
+    if (showPerformanceMetrics && schoolId) {
+      fetchPerformanceMetrics();
+    }
+  }, [flightId, showPerformanceMetrics, schoolId]);
+
+  async function fetchPerformanceMetrics() {
+    if (!schoolId) return;
+    
+    try {
+      setLoadingPerformance(true);
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(endDate.getDate() - 90);
+
+      const response = await fetch(
+        `/api/predictions/performance?schoolId=${schoolId}&startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        setPerformance(data);
+      }
+    } catch (err: any) {
+      console.error('Error fetching performance metrics:', err);
+    } finally {
+      setLoadingPerformance(false);
+    }
+  }
 
   async function fetchPrediction() {
     try {
@@ -142,6 +187,41 @@ export function CancellationPredictionCard({ flightId }: CancellationPredictionC
         <Button onClick={fetchPrediction} variant="outline" size="sm" className="w-full">
           Refresh Prediction
         </Button>
+
+        {/* Performance Metrics */}
+        {showPerformanceMetrics && performance && (
+          <div className="pt-4 border-t space-y-3">
+            <p className="text-sm font-semibold">Model Performance (Last 90 Days)</p>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="p-2 bg-gray-50 rounded">
+                <p className="text-gray-600">Accuracy</p>
+                <p className="text-lg font-bold">{performance.accuracy.toFixed(1)}%</p>
+              </div>
+              <div className="p-2 bg-gray-50 rounded">
+                <p className="text-gray-600">Precision</p>
+                <p className="text-lg font-bold">{performance.precision.toFixed(1)}%</p>
+              </div>
+              <div className="p-2 bg-gray-50 rounded">
+                <p className="text-gray-600">Recall</p>
+                <p className="text-lg font-bold">{performance.recall.toFixed(1)}%</p>
+              </div>
+              <div className="p-2 bg-gray-50 rounded">
+                <p className="text-gray-600">Total Predictions</p>
+                <p className="text-lg font-bold">{performance.totalPredictions}</p>
+              </div>
+            </div>
+            {performance.falsePositives > 0 || performance.falseNegatives > 0 ? (
+              <div className="text-xs text-gray-600 space-y-1">
+                {performance.falsePositives > 0 && (
+                  <p>False Positives: {performance.falsePositives} (predicted cancel, didn't cancel)</p>
+                )}
+                {performance.falseNegatives > 0 && (
+                  <p>False Negatives: {performance.falseNegatives} (didn't predict, but cancelled)</p>
+                )}
+              </div>
+            ) : null}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

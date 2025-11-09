@@ -4,6 +4,7 @@ import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { OfflineBanner } from "@/components/mobile/OfflineBanner";
 import { BottomNavigation } from "@/components/mobile/BottomNavigation";
+import { TopNavigation } from "@/components/navigation/TopNavigation";
 import { PWAPrompt } from "@/components/mobile/PWAPrompt";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -70,6 +71,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <AuthProvider>
           <OfflineBanner />
+          <TopNavigation />
           {children}
           <BottomNavigation />
           <PWAPrompt />

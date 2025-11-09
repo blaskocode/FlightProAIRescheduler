@@ -95,7 +95,7 @@ export async function createDiscoveryFlightBooking(
             lte: new Date(scheduledEnd.getTime() + 2 * 60 * 60 * 1000), // 2 hours after
           },
           status: {
-            in: ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS'],
+            in: ['PENDING', 'CONFIRMED', 'IN_PROGRESS'],
           },
         },
       },

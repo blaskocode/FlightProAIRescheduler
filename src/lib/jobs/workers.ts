@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma';
 import { sendNotification } from '@/lib/services/notification-service';
 
 // Weather Check Worker
+// Increased concurrency for better throughput with hundreds of flights
 export const weatherCheckWorker = new Worker<WeatherCheckJobData>(
   'weather-check',
   async (job) => {
@@ -13,7 +14,11 @@ export const weatherCheckWorker = new Worker<WeatherCheckJobData>(
   },
   {
     connection,
-    concurrency: 5,
+    concurrency: 15, // Increased from 5 to handle more concurrent checks
+    limiter: {
+      max: 20, // Max 20 jobs per interval
+      duration: 1000, // Per second (rate limiting to avoid API throttling)
+    },
   }
 );
 
@@ -277,6 +282,10 @@ weatherCheckWorker.on('completed', (job) => {
 
 weatherCheckWorker.on('failed', (job, err) => {
   console.error(`Weather check job ${job?.id} failed:`, err);
+  if (job?.data) {
+    console.error(`Failed job data:`, job.data);
+    console.error(`Error stack:`, err?.stack);
+  }
 });
 
 rescheduleExpirationWorker.on('completed', (job) => {

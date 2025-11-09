@@ -15,13 +15,46 @@ export async function processWeatherCheck(job: Job<WeatherCheckJobData>) {
   
   try {
     // 1. Fetch flight details
+    // Use select to avoid fetching missing columns like smsNotifications
     const flight = await prisma.flight.findUnique({
       where: { id: flightId },
-      include: {
-        student: true,
+      select: {
+        id: true,
+        schoolId: true,
+        studentId: true,
+        instructorId: true,
+        aircraftId: true,
+        scheduledStart: true,
+        scheduledEnd: true,
+        departureAirport: true,
+        destinationAirport: true,
+        route: true,
+        flightType: true,
+        status: true,
+        student: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            trainingLevel: true,
+            schoolId: true,
+          },
+        },
         aircraft: {
-          include: {
-            aircraftType: true,
+          select: {
+            id: true,
+            tailNumber: true,
+            aircraftType: {
+              select: {
+                id: true,
+                make: true,
+                model: true,
+                category: true,
+                maxWindSpeed: true,
+                crosswindLimit: true, // Needed for getWeatherMinimums
+              },
+            },
           },
         },
       },
@@ -166,9 +199,25 @@ export async function processWeatherCheck(job: Job<WeatherCheckJobData>) {
         });
 
         // Send notification to student (with forecast confidence if available)
+        // Only pass the student fields we have (from select query)
         const emailData = generateWeatherConflictEmail({
-          student: flight.student,
-          flight,
+          student: {
+            id: flight.student.id,
+            email: flight.student.email,
+            firstName: flight.student.firstName,
+            lastName: flight.student.lastName,
+            trainingLevel: flight.student.trainingLevel,
+            schoolId: flight.student.schoolId,
+          },
+          flight: {
+            id: flight.id,
+            scheduledStart: flight.scheduledStart,
+            departureAirport: flight.departureAirport,
+            destinationAirport: flight.destinationAirport,
+            route: flight.route,
+            flightType: flight.flightType,
+            status: flight.status,
+          },
           weatherCheck,
           forecastConfidence: forecastConfidence || undefined,
         });
@@ -196,7 +245,15 @@ export async function processWeatherCheck(job: Job<WeatherCheckJobData>) {
       confidence: checkResult.confidence,
     };
   } catch (error: any) {
-    job.log(`Error processing weather check: ${error.message}`);
+    const errorMessage = error?.message || String(error);
+    const errorStack = error?.stack || '';
+    job.log(`Error processing weather check for flight ${flightId}: ${errorMessage}`);
+    console.error(`Weather check failed for flight ${flightId}:`, {
+      error: errorMessage,
+      stack: errorStack,
+      flightId,
+      checkType,
+    });
     throw error;
   }
 }

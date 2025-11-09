@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
             lte: future,
           },
           status: {
-            in: ['SCHEDULED', 'CONFIRMED'],
+            in: ['PENDING', 'CONFIRMED'],
           },
         },
       },

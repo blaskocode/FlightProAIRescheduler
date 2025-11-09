@@ -13,8 +13,10 @@ export async function POST(
   try {
     const flight = await prisma.flight.findUnique({
       where: { id: params.id },
-      include: {
-        student: true,
+      select: {
+        id: true,
+        studentId: true,
+        status: true,
       },
     });
 
@@ -51,43 +53,13 @@ export async function POST(
     // Generate AI reschedule suggestions
     const suggestions = await generateRescheduleSuggestions(params.id);
 
-    // Create reschedule request
-    const expiresAt = new Date();
-    expiresAt.setHours(expiresAt.getHours() + 48); // 48 hour expiration
-
-    const rescheduleRequest = await prisma.rescheduleRequest.create({
-      data: {
-        flightId: flight.id,
-        studentId: flight.studentId,
-        suggestions: suggestions.suggestions as any,
-        aiReasoning: suggestions.priorityFactors as any,
-        status: 'PENDING_STUDENT',
-        expiresAt,
-      },
-      include: {
-        flight: {
-          select: {
-            id: true,
-            scheduledStart: true,
-            lessonTitle: true,
-          },
-        },
-        student: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-          },
-        },
-      },
-    });
+    // Don't create reschedule request yet - only return suggestions
+    // The request will be created when user clicks "Select Option"
+    // This allows users to view options without committing to a reschedule
 
     return NextResponse.json({
-      rescheduleRequestId: rescheduleRequest.id,
       suggestions: suggestions.suggestions,
       priorityFactors: suggestions.priorityFactors,
-      expiresAt: rescheduleRequest.expiresAt,
     });
   } catch (error: any) {
     console.error('Error creating reschedule request:', error);

@@ -172,7 +172,7 @@ export async function getWatchListFlights(schoolId?: string): Promise<any[]> {
         lte: next24Hours,
       },
       status: {
-        in: ['SCHEDULED', 'CONFIRMED'],
+        in: ['PENDING', 'CONFIRMED'],
       },
     },
     include: {

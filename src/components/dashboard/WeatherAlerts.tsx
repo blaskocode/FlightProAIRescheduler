@@ -73,7 +73,7 @@ export function WeatherAlerts() {
                   {alert.flight.lessonTitle}
                 </p>
                 <ul className="text-xs text-gray-700 mt-2 list-disc list-inside">
-                  {alert.reasons.slice(0, 2).map((reason, idx) => (
+                  {alert.reasons.map((reason, idx) => (
                     <li key={idx}>{reason}</li>
                   ))}
                 </ul>

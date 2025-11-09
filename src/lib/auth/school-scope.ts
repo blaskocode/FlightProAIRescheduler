@@ -8,25 +8,25 @@ import { AuthUser } from '@/lib/auth';
 export async function getUserSchoolId(authUser: AuthUser | null): Promise<string | null> {
   if (!authUser) return null;
 
-  if (authUser.role === 'student') {
+  if (authUser.role === 'student' && authUser.studentId) {
     const student = await prisma.student.findUnique({
-      where: { id: authUser.id },
+      where: { id: authUser.studentId },
       select: { schoolId: true },
     });
     return student?.schoolId || null;
   }
 
-  if (authUser.role === 'instructor') {
+  if (authUser.role === 'instructor' && authUser.instructorId) {
     const instructor = await prisma.instructor.findUnique({
-      where: { id: authUser.id },
+      where: { id: authUser.instructorId },
       select: { schoolId: true },
     });
     return instructor?.schoolId || null;
   }
 
-  if (authUser.role === 'admin') {
+  if (authUser.role === 'admin' && authUser.adminId) {
     const admin = await prisma.admin.findUnique({
-      where: { id: authUser.id },
+      where: { id: authUser.adminId },
       select: { schoolId: true, role: true },
     });
     // Super admin (role === 'super_admin' or schoolId === null) can access all schools

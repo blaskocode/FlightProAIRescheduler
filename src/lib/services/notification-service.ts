@@ -4,6 +4,57 @@ import { database } from '@/lib/firebase';
 import { prisma } from '@/lib/prisma';
 import { sendSMS, generateSMSMessage } from './sms-service';
 
+/**
+ * Check if current time is within quiet hours
+ */
+function isInQuietHours(start: string, end: string): boolean {
+  const now = new Date();
+  const currentTime = now.getHours() * 60 + now.getMinutes(); // minutes since midnight
+  
+  const [startHour, startMin] = start.split(':').map(Number);
+  const startTime = startHour * 60 + startMin;
+  
+  const [endHour, endMin] = end.split(':').map(Number);
+  const endTime = endHour * 60 + endMin;
+  
+  // Handle quiet hours that span midnight
+  if (startTime > endTime) {
+    return currentTime >= startTime || currentTime <= endTime;
+  }
+  
+  return currentTime >= startTime && currentTime <= endTime;
+}
+
+/**
+ * Determine if notification should be sent based on preferences
+ */
+function shouldSendNotification(
+  channel: 'email' | 'sms' | 'push',
+  legacyEnabled: boolean,
+  eventTypeEnabled: boolean | undefined,
+  channelEnabled: boolean | undefined,
+  inQuietHours: boolean,
+  timingPrefs: any
+): boolean {
+  // If in quiet hours and not immediate, don't send
+  if (inQuietHours && !timingPrefs?.immediate) {
+    return false;
+  }
+  
+  // Check event-specific preference first
+  if (eventTypeEnabled !== undefined) {
+    return eventTypeEnabled;
+  }
+  
+  // Check channel preference
+  if (channelEnabled !== undefined) {
+    return channelEnabled;
+  }
+  
+  // Fall back to legacy setting
+  return legacyEnabled;
+}
+
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export interface NotificationData {
@@ -20,17 +71,42 @@ export interface NotificationData {
  */
 export async function sendNotification(data: NotificationData) {
   try {
-    // Get recipient
+    // Get recipient - use select to avoid fetching missing columns
     const student = await prisma.student.findUnique({
       where: { id: data.recipientId },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        phone: true,
+        emailNotifications: true,
+        smsOptIn: true,
+        phoneVerified: true,
+        schoolId: true,
+        notificationPreferences: true,
+      },
     });
 
     if (!student) {
       throw new Error('Recipient not found');
     }
 
+    // Check notification preferences
+    const prefs = (student.notificationPreferences as any) || {};
+    const eventTypeKey = data.type.toLowerCase().replace(/_/g, '');
+    const eventPrefs = prefs.eventTypes?.[eventTypeKey] || {};
+    
+    // Check quiet hours
+    const quietHours = prefs.timing?.quietHours;
+    const inQuietHours = quietHours?.enabled && isInQuietHours(quietHours.start, quietHours.end);
+    
+    // Determine if we should send based on preferences
+    const shouldSendEmail = shouldSendNotification('email', student.emailNotifications, eventPrefs.email, prefs.channels?.email, inQuietHours, prefs.timing);
+    const shouldSendSMS = shouldSendNotification('sms', student.smsOptIn && student.phoneVerified, eventPrefs.sms, prefs.channels?.sms, inQuietHours, prefs.timing);
+    const shouldSendPush = shouldSendNotification('push', true, eventPrefs.push, prefs.channels?.push, inQuietHours, prefs.timing);
+
     // Send email if enabled
-    if (student.emailNotifications) {
+    if (shouldSendEmail) {
       try {
         await resend.emails.send({
           from: process.env.RESEND_FROM_EMAIL || 'noreply@flightpro.com',
@@ -58,7 +134,7 @@ export async function sendNotification(data: NotificationData) {
     }
 
     // Send SMS if enabled and opted in
-    if (student.smsNotifications && student.smsOptIn && student.phoneVerified && student.phone) {
+    if (shouldSendSMS && student.phone) {
       try {
         const smsMessage = generateSMSMessage(data.type, {
           studentName: student.firstName,
@@ -109,7 +185,7 @@ export async function sendNotification(data: NotificationData) {
     }
 
     // Send in-app notification via Firebase
-    if (database) {
+    if (shouldSendPush && database) {
       try {
         const notificationsRef = ref(database, `notifications/${data.recipientId}`);
         await push(notificationsRef, {

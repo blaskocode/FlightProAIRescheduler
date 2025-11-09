@@ -44,38 +44,94 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             // User doesn't exist in database - try to sync them
             console.log('User not found in database, attempting to sync...', firebaseUser.uid);
             try {
+              // Get first school for fallback (for development)
+              let schoolId: string | undefined;
+              try {
+                const schoolResponse = await fetch('/api/schools');
+                if (schoolResponse.ok) {
+                  const schools = await schoolResponse.json();
+                  if (schools && schools.length > 0) {
+                    schoolId = schools[0].id;
+                  }
+                }
+              } catch (e) {
+                console.warn('Could not fetch schools for sync:', e);
+              }
+
+              // Determine role based on email (for demo accounts) or default to student
+              let role: 'student' | 'instructor' | 'admin' = 'student';
+              if (firebaseUser.email === 'admin.demo@flightpro.com') {
+                role = 'admin';
+              } else if (firebaseUser.email === 'instructor.demo@flightpro.com') {
+                role = 'instructor';
+              } else if (firebaseUser.email === 'student.demo@flightpro.com') {
+                role = 'student';
+              }
+
               const syncResponse = await fetch('/api/auth/sync-user', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                   uid: firebaseUser.uid,
                   email: firebaseUser.email,
-                  role: 'student', // Default to student
+                  role: role,
+                  schoolId: role === 'admin' ? undefined : schoolId, // Admin doesn't need schoolId
                 }),
               });
 
-              if (syncResponse.ok) {
+              if (syncResponse.ok || syncResponse.status === 409) {
+                // 409 is now handled as success in the endpoint, but check anyway
                 const syncData = await syncResponse.json();
                 console.log('User synced successfully:', syncData);
                 
-                // Retry fetching user role after sync (with a small delay to ensure DB is updated)
-                await new Promise(resolve => setTimeout(resolve, 100));
-                const retryResponse = await fetch(`/api/auth/user-role?uid=${firebaseUser.uid}`);
-                if (retryResponse.ok) {
-                  const roleData = await retryResponse.json();
-                  setAuthUser(roleData);
-                } else {
-                  console.error('Failed to fetch user role after sync:', await retryResponse.text());
-                  setAuthUser(null);
+                // Retry fetching user role after sync (with increasing delays to handle DB transaction timing)
+                let roleFetched = false;
+                for (let attempt = 0; attempt < 5; attempt++) {
+                  await new Promise(resolve => setTimeout(resolve, 200 * (attempt + 1))); // 200ms, 400ms, 600ms, 800ms, 1000ms
+                  const retryResponse = await fetch(`/api/auth/user-role?uid=${firebaseUser.uid}`);
+                  if (retryResponse.ok) {
+                    const roleData = await retryResponse.json();
+                    setAuthUser(roleData);
+                    roleFetched = true;
+                    break;
+                  }
+                }
+                
+                if (!roleFetched) {
+                  console.error('Failed to fetch user role after sync after multiple retries');
+                  // Don't set authUser to null - user exists, just retry later
+                  setTimeout(async () => {
+                    const retryAgain = await fetch(`/api/auth/user-role?uid=${firebaseUser.uid}`);
+                    if (retryAgain.ok) {
+                      const roleData = await retryAgain.json();
+                      setAuthUser(roleData);
+                    }
+                  }, 2000);
                 }
               } else {
                 const errorData = await syncResponse.json().catch(() => ({ error: 'Unknown error' }));
                 console.error('Failed to sync user:', errorData);
-                setAuthUser(null);
+                // Don't set authUser to null - user might have been synced by SignupForm
+                // Just retry fetching user role
+                setTimeout(async () => {
+                  const retryResponse = await fetch(`/api/auth/user-role?uid=${firebaseUser.uid}`);
+                  if (retryResponse.ok) {
+                    const roleData = await retryResponse.json();
+                    setAuthUser(roleData);
+                  }
+                }, 1000);
               }
             } catch (syncError) {
               console.error('Error syncing user to database:', syncError);
-              setAuthUser(null);
+              // Don't set authUser to null - user might have been synced by SignupForm
+              // Just retry fetching user role
+              setTimeout(async () => {
+                const retryResponse = await fetch(`/api/auth/user-role?uid=${firebaseUser.uid}`);
+                if (retryResponse.ok) {
+                  const roleData = await retryResponse.json();
+                  setAuthUser(roleData);
+                }
+              }, 1000);
             }
           } else {
             console.error('Unexpected error fetching user role:', response.status, await response.text().catch(() => ''));
@@ -97,10 +153,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     if (!auth) return;
-    const { signOut: firebaseSignOut } = await import('firebase/auth');
-    await firebaseSignOut(auth);
-    setUser(null);
-    setAuthUser(null);
+    try {
+      const { signOut: firebaseSignOut } = await import('firebase/auth');
+      await firebaseSignOut(auth);
+      // State will be updated automatically by onAuthStateChanged listener
+      // But we can also clear it immediately for faster UI update
+      setUser(null);
+      setAuthUser(null);
+    } catch (error) {
+      console.error('Error signing out:', error);
+      // Still clear state even if Firebase sign out fails
+      setUser(null);
+      setAuthUser(null);
+    }
   };
 
   return (

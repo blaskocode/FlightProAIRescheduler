@@ -49,7 +49,7 @@ export async function checkAvailability(
       id: excludeFlightId ? { not: excludeFlightId } : undefined,
       scheduledStart: { lte: checkEnd },
       scheduledEnd: { gte: checkStart },
-      status: { in: ['SCHEDULED', 'CONFIRMED'] },
+      status: { in: ['PENDING', 'CONFIRMED'] },
     },
     select: {
       id: true,
@@ -75,7 +75,7 @@ export async function checkAvailability(
         id: excludeFlightId ? { not: excludeFlightId } : undefined,
         scheduledStart: { lte: checkEnd },
         scheduledEnd: { gte: checkStart },
-        status: { in: ['SCHEDULED', 'CONFIRMED'] },
+        status: { in: ['PENDING', 'CONFIRMED'] },
       },
       select: {
         id: true,
@@ -101,7 +101,7 @@ export async function checkAvailability(
       id: excludeFlightId ? { not: excludeFlightId } : undefined,
       scheduledStart: { lte: checkEnd },
       scheduledEnd: { gte: checkStart },
-      status: { in: ['SCHEDULED', 'CONFIRMED'] },
+      status: { in: ['PENDING', 'CONFIRMED'] },
     },
     select: {
       id: true,
@@ -187,7 +187,7 @@ export async function createBooking(
         departureAirport: data.departureAirport,
         destinationAirport: data.destinationAirport,
         route: data.route,
-        status: 'SCHEDULED',
+        status: 'PENDING',
       },
       include: {
         student: true,

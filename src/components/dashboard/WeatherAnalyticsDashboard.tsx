@@ -26,7 +26,9 @@ export function WeatherAnalyticsDashboard({ schoolId }: WeatherAnalyticsDashboar
   const [dateRange, setDateRange] = useState<'30' | '90' | '365'>('365');
 
   useEffect(() => {
-    fetchAnalytics();
+    if (schoolId) {
+      fetchAnalytics();
+    }
   }, [schoolId, dateRange]);
 
   async function fetchAnalytics() {
@@ -39,11 +41,11 @@ export function WeatherAnalyticsDashboard({ schoolId }: WeatherAnalyticsDashboar
       startDate.setDate(endDate.getDate() - parseInt(dateRange));
 
       const [monthlyRes, airportRes, trendsRes, windowsRes, insightsRes] = await Promise.all([
-        fetch(`/api/weather/analytics/monthly-patterns?schoolId=${schoolId}&startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`),
-        fetch(`/api/weather/analytics/airport-patterns?schoolId=${schoolId}&startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`),
-        fetch(`/api/weather/analytics/cancellation-trends?schoolId=${schoolId}&startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}&groupBy=day`),
-        fetch(`/api/weather/analytics/optimal-windows?schoolId=${schoolId}&startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`),
-        fetch(`/api/weather/analytics/insights?schoolId=${schoolId}&startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`),
+        fetch(`/api/weather/analytics/monthly-patterns?schoolId=${schoolId}&startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`).catch(() => ({ ok: false, json: () => Promise.resolve([]) })),
+        fetch(`/api/weather/analytics/airport-patterns?schoolId=${schoolId}&startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`).catch(() => ({ ok: false, json: () => Promise.resolve([]) })),
+        fetch(`/api/weather/analytics/cancellation-trends?schoolId=${schoolId}&startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}&groupBy=day`).catch(() => ({ ok: false, json: () => Promise.resolve([]) })),
+        fetch(`/api/weather/analytics/optimal-windows?schoolId=${schoolId}&startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`).catch(() => ({ ok: false, json: () => Promise.resolve([]) })),
+        fetch(`/api/weather/analytics/insights?schoolId=${schoolId}&startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`).catch(() => ({ ok: false, json: () => Promise.resolve([]) })),
       ]);
 
       if (monthlyRes.ok) {
@@ -70,11 +72,22 @@ export function WeatherAnalyticsDashboard({ schoolId }: WeatherAnalyticsDashboar
         const data = await insightsRes.json();
         setInsights(data);
       }
+      
+      // Set loading to false after all requests complete (even if some failed)
+      setLoading(false);
     } catch (err: any) {
       setError(err.message || 'Failed to fetch analytics');
-    } finally {
       setLoading(false);
     }
+  }
+  
+  // Don't render if no schoolId
+  if (!schoolId) {
+    return (
+      <div className="rounded-lg border bg-white p-6 shadow-sm">
+        <p className="text-gray-500">Weather analytics require a school association.</p>
+      </div>
+    );
   }
 
   if (loading) {
@@ -95,13 +108,13 @@ export function WeatherAnalyticsDashboard({ schoolId }: WeatherAnalyticsDashboar
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Weather Analytics</h2>
+    <div className="space-y-4 sm:space-y-6 p-3 sm:p-4">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4">
+        <h2 className="text-xl sm:text-2xl font-bold">Weather Analytics</h2>
         <select
           value={dateRange}
           onChange={(e) => setDateRange(e.target.value as '30' | '90' | '365')}
-          className="rounded-md border border-gray-300 px-3 py-2"
+          className="rounded-md border border-gray-300 px-3 py-2 w-full sm:w-auto text-sm sm:text-base"
         >
           <option value="30">Last 30 Days</option>
           <option value="90">Last 90 Days</option>

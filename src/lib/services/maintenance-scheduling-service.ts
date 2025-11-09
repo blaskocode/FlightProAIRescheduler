@@ -252,7 +252,7 @@ export async function blockAircraftForMaintenance(
             lte: new Date(scheduledDate.getTime() + estimatedDurationHours * 60 * 60 * 1000),
           },
           status: {
-            in: ['SCHEDULED', 'CONFIRMED'],
+            in: ['PENDING', 'CONFIRMED'],
           },
         },
       },
