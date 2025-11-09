@@ -235,12 +235,18 @@ export async function POST(request: NextRequest) {
     );
   } catch (error: any) {
     console.error('Error syncing user:', error);
+    console.error('Error details:', {
+      code: error.code,
+      message: error.message,
+      meta: error.meta,
+      stack: error.stack,
+    });
     
     // Handle unique constraint violations (user already exists)
     if (error.code === 'P2002') {
       // User already exists - try to find and return existing user
       try {
-        // Check all tables for existing user
+        // Check all tables for existing user by firebaseUid
         const existingStudent = await prisma.student.findUnique({
           where: { firebaseUid: uid },
         });
@@ -282,19 +288,101 @@ export async function POST(request: NextRequest) {
             },
           });
         }
-      } catch (findError) {
+
+        // If firebaseUid not found, check by email (might be a different firebaseUid)
+        if (email) {
+          const studentByEmail = await prisma.student.findUnique({
+            where: { email },
+          });
+          if (studentByEmail) {
+            // Update firebaseUid if different
+            if (!studentByEmail.firebaseUid || studentByEmail.firebaseUid !== uid) {
+              try {
+                await prisma.student.update({
+                  where: { id: studentByEmail.id },
+                  data: { firebaseUid: uid },
+                });
+              } catch (updateError: any) {
+                // If update fails (e.g., uid already in use), just return existing user
+                console.warn('Could not update firebaseUid:', updateError);
+              }
+            }
+            return NextResponse.json({
+              success: true,
+              message: 'User already exists (by email)',
+              user: {
+                id: studentByEmail.id,
+                role: 'student',
+              },
+            });
+          }
+
+          const instructorByEmail = await prisma.instructor.findUnique({
+            where: { email },
+          });
+          if (instructorByEmail) {
+            if (!instructorByEmail.firebaseUid || instructorByEmail.firebaseUid !== uid) {
+              try {
+                await prisma.instructor.update({
+                  where: { id: instructorByEmail.id },
+                  data: { firebaseUid: uid },
+                });
+              } catch (updateError: any) {
+                console.warn('Could not update firebaseUid:', updateError);
+              }
+            }
+            return NextResponse.json({
+              success: true,
+              message: 'User already exists (by email)',
+              user: {
+                id: instructorByEmail.id,
+                role: 'instructor',
+              },
+            });
+          }
+
+          const adminByEmail = await prisma.admin.findUnique({
+            where: { email },
+          });
+          if (adminByEmail) {
+            if (!adminByEmail.firebaseUid || adminByEmail.firebaseUid !== uid) {
+              try {
+                await prisma.admin.update({
+                  where: { id: adminByEmail.id },
+                  data: { firebaseUid: uid },
+                });
+              } catch (updateError: any) {
+                console.warn('Could not update firebaseUid:', updateError);
+              }
+            }
+            return NextResponse.json({
+              success: true,
+              message: 'User already exists (by email)',
+              user: {
+                id: adminByEmail.id,
+                role: 'admin',
+              },
+            });
+          }
+        }
+      } catch (findError: any) {
         console.error('Error finding existing user:', findError);
       }
       
       // If we can't find the user, return success anyway (user exists somewhere)
       return NextResponse.json({
         success: true,
-        message: 'User already exists',
+        message: 'User already exists (constraint violation)',
       });
     }
 
+    // Return detailed error for debugging
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { 
+        error: error.message || 'Internal server error',
+        code: error.code,
+        details: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+      },
       { status: 500 }
     );
   }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -31,7 +31,7 @@ interface WeatherMapDashboardProps {
 
 
 export function WeatherMapDashboard({ schoolId }: WeatherMapDashboardProps) {
-  const { user } = useAuth();
+  const { user, authUser, loading: authLoading } = useAuth();
   const [airports, setAirports] = useState<AirportWeather[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
@@ -42,8 +42,8 @@ export function WeatherMapDashboard({ schoolId }: WeatherMapDashboardProps) {
     setMounted(true);
   }, []);
 
-  const fetchWeatherData = async () => {
-    if (!user) return;
+  const fetchWeatherData = useCallback(async () => {
+    if (!user || !authUser) return;
     
     try {
       setLoading(true);
@@ -159,16 +159,16 @@ export function WeatherMapDashboard({ schoolId }: WeatherMapDashboardProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, authUser]);
 
   useEffect(() => {
-    if (mounted && user) {
-      fetchWeatherData();
-      // Refresh every 5 minutes
-      const interval = setInterval(fetchWeatherData, 5 * 60 * 1000);
-      return () => clearInterval(interval);
-    }
-  }, [schoolId, mounted, user]);
+    if (!mounted || !user || !authUser || authLoading) return;
+    
+    fetchWeatherData();
+    // Refresh every 5 minutes
+    const interval = setInterval(fetchWeatherData, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [schoolId, mounted, user, authUser, authLoading, fetchWeatherData]);
 
 
   // Default center (Austin, TX)

@@ -110,7 +110,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 }
               } else {
                 const errorData = await syncResponse.json().catch(() => ({ error: 'Unknown error' }));
-                console.error('Failed to sync user:', errorData);
+                console.error('Failed to sync user:', {
+                  status: syncResponse.status,
+                  statusText: syncResponse.statusText,
+                  error: errorData.error || errorData.message || 'Unknown error',
+                  code: errorData.code,
+                  details: errorData.details,
+                });
+                
+                // If it's a 500 error, show more details in development
+                if (syncResponse.status === 500 && process.env.NODE_ENV === 'development') {
+                  console.error('Sync error details:', errorData);
+                }
+                
                 // Don't set authUser to null - user might have been synced by SignupForm
                 // Just retry fetching user role
                 setTimeout(async () => {
@@ -119,7 +131,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     const roleData = await retryResponse.json();
                     setAuthUser(roleData);
                   }
-                }, 1000);
+                }, 2000);
               }
             } catch (syncError) {
               console.error('Error syncing user to database:', syncError);

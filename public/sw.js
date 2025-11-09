@@ -51,7 +51,15 @@ self.addEventListener('fetch', (event) => {
     // Always fetch fresh from network, don't use cache
     event.respondWith(
       fetch(event.request).catch((err) => {
-        console.warn('Service worker fetch failed:', err);
+        // Suppress "Failed to fetch" errors - these are expected during:
+        // - Auth sync (401, 404 responses)
+        // - Network interruptions
+        // - CORS issues in development
+        // The actual API endpoints handle their own error responses
+        // Only log if it's not a "Failed to fetch" error (which is usually expected)
+        if (err.name !== 'TypeError' || err.message !== 'Failed to fetch') {
+          console.warn('Service worker: Unexpected fetch error:', err);
+        }
         // Return a basic error response instead of failing completely
         return new Response('Network error', {
           status: 408,
@@ -83,7 +91,11 @@ self.addEventListener('fetch', (event) => {
           return response;
         })
         .catch((err) => {
-          console.warn('Service worker fetch failed:', err);
+          // Suppress "Failed to fetch" errors - these are expected during normal operation
+          // The actual API endpoints handle their own error responses
+          if (err.name !== 'TypeError' || err.message !== 'Failed to fetch') {
+            console.warn('Service worker: Unexpected fetch error:', err);
+          }
           // Return a basic error response
           return new Response('Network error', {
             status: 408,
