@@ -39,48 +39,72 @@ export function WeatherAlerts() {
   }, []);
 
   if (loading) {
-    return <div className="p-4">Loading weather alerts...</div>;
+    return (
+      <div className="card-sky p-4">
+        <div className="flex items-center gap-2 text-sky-600">
+          <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          Loading weather alerts...
+        </div>
+      </div>
+    );
   }
 
   if (alerts.length === 0) {
     return (
-      <div className="rounded-lg border bg-white p-4">
-        <h3 className="font-semibold mb-2">Weather Alerts</h3>
-        <p className="text-sm text-gray-500">No active weather alerts</p>
+      <div className="card-elevated p-5">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-xl">☁️</span>
+          <h3 className="font-bold text-sky-800">Weather Alerts</h3>
+        </div>
+        <p className="text-sm text-sky-600">No active weather alerts - clear skies! ✈️</p>
       </div>
     );
   }
 
   return (
-    <div className="rounded-lg border bg-white p-4">
-      <h3 className="font-semibold mb-4">Active Weather Alerts</h3>
+    <div className="card-elevated p-5">
+      <div className="flex items-center gap-2 mb-4">
+        <span className="text-xl">⛈️</span>
+        <h3 className="font-bold text-sky-800">Active Weather Alerts</h3>
+      </div>
       <div className="space-y-3">
         {alerts.map((alert) => (
           <div
             key={alert.id}
-            className={`rounded-md p-3 ${
+            className={`rounded-lg p-4 border-2 ${
               alert.result === 'UNSAFE'
-                ? 'bg-red-50 border border-red-200'
-                : 'bg-yellow-50 border border-yellow-200'
+                ? 'bg-aviation-red-50 border-aviation-red-200'
+                : 'bg-amber-50 border-amber-200'
             }`}
           >
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="font-medium text-sm">
-                  {new Date(alert.flight.scheduledStart).toLocaleDateString()}
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-lg">{alert.result === 'UNSAFE' ? '⚠️' : '🌦️'}</span>
+                  <p className="font-semibold text-sm text-sky-900">
+                    {new Date(alert.flight.scheduledStart).toLocaleDateString()}
+                  </p>
+                </div>
+                <p className="text-xs text-sky-700 font-medium mb-2">
+                  {alert.flight.lessonTitle || 'Flight Lesson'}
                 </p>
-                <p className="text-xs text-gray-600 mt-1">
-                  {alert.flight.lessonTitle}
-                </p>
-                <ul className="text-xs text-gray-700 mt-2 list-disc list-inside">
+                <ul className="text-xs text-sky-700 mt-2 space-y-1">
                   {alert.reasons.map((reason, idx) => (
-                    <li key={idx}>{reason}</li>
+                    <li key={idx} className="flex items-start gap-2">
+                      <span className="text-sky-500">•</span>
+                      <span>{reason}</span>
+                    </li>
                   ))}
                 </ul>
               </div>
-              <span className="text-xs font-medium">
-                {alert.confidence}% confidence
-              </span>
+              <div className="flex-shrink-0">
+                <span className="text-xs font-bold px-2 py-1 rounded-full bg-white/80 text-sky-700">
+                  {alert.confidence}%
+                </span>
+              </div>
             </div>
           </div>
         ))}

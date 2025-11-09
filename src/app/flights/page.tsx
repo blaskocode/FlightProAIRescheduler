@@ -28,13 +28,26 @@ export default function FlightsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-3 sm:p-4 md:p-6 lg:p-8 pb-20 md:pb-8">
+    <div className="min-h-screen p-3 sm:p-4 md:p-6 lg:p-8 pb-20 md:pb-8 relative z-10">
       <div className="mx-auto max-w-7xl w-full">
-        <div className="mb-4 sm:mb-6">
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">Flights</h1>
-          <p className="mt-1 sm:mt-2 text-xs sm:text-sm md:text-base text-gray-600">
-            View and manage your upcoming flights
-          </p>
+        {/* Hero Header */}
+        <div className="mb-6 sm:mb-8">
+          <div className="card-sky-featured p-6 sm:p-8 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-48 h-48 opacity-5">
+              <div className="text-8xl transform rotate-12">🛫</div>
+            </div>
+            <div className="relative z-10">
+              <div className="flex items-center gap-3 mb-2">
+                <span className="text-3xl sm:text-4xl">✈️</span>
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white">
+                  Flights
+                </h1>
+              </div>
+              <p className="text-sky-100 text-sm sm:text-base">
+                View and manage your upcoming flights
+              </p>
+            </div>
+          </div>
         </div>
         <FlightList />
       </div>

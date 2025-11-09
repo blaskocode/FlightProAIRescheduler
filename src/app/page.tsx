@@ -29,44 +29,65 @@ export default function Home() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-4 md:p-24 pb-20 md:pb-24">
-      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm">
-        <h1 className="text-2xl md:text-4xl font-bold text-center mb-6 md:mb-8">
-          Flight Schedule Pro AI Rescheduler
-        </h1>
-        <p className="text-center text-base md:text-lg text-muted-foreground mb-8">
-          AI-Powered Weather Cancellation & Rescheduling System for Flight Schools
-        </p>
+    <main className="flex min-h-screen flex-col items-center justify-center p-4 md:p-24 pb-20 md:pb-24 relative z-10">
+      <div className="z-10 max-w-5xl w-full items-center justify-between">
+        {/* Hero Section with Aviation Theme */}
+        <div className="text-center mb-12 md:mb-16">
+          <div className="flex justify-center items-center gap-4 mb-6">
+            <span className="text-6xl md:text-8xl animate-pulse">✈️</span>
+          </div>
+          <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold mb-4 md:mb-6">
+            <span className="bg-sky-gradient bg-clip-text text-transparent">
+              Flight Schedule Pro
+            </span>
+            <br />
+            <span className="text-sky-700">AI Rescheduler</span>
+          </h1>
+          <p className="text-lg md:text-xl text-sky-600 font-medium mb-2">
+            AI-Powered Weather Cancellation & Rescheduling
+          </p>
+          <p className="text-base md:text-lg text-sky-500">
+            For Flight Schools
+          </p>
+        </div>
         
         {/* Demo Credentials Card */}
-        <Card className="mb-8 max-w-2xl mx-auto border-blue-200 bg-blue-50/50">
+        <Card className="mb-8 max-w-2xl mx-auto card-elevated border-cloud-200">
           <CardHeader>
-            <CardTitle className="text-lg md:text-xl">🎯 Demo Accounts</CardTitle>
-            <CardDescription>
-              Use these credentials to explore the system. All accounts use password: <strong>DemoPass123!</strong>
+            <CardTitle className="text-lg md:text-xl flex items-center gap-2 text-sky-800">
+              <span>🎯</span> Demo Accounts
+            </CardTitle>
+            <CardDescription className="text-sky-600">
+              Use these credentials to explore the system. All accounts use password: <strong className="text-sky-700">DemoPass123!</strong>
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-              <div className="p-3 bg-white rounded-md border border-gray-200">
-                <div className="font-semibold text-blue-600 mb-1">👨‍🎓 Student</div>
-                <div className="text-xs text-gray-600 break-all">student.demo@flightpro.com</div>
-                <div className="text-xs text-gray-500 mt-1">DemoPass123!</div>
+              <div className="p-4 card-sky hover:shadow-lg transition-shadow">
+                <div className="font-bold text-sky-600 mb-2 flex items-center gap-2">
+                  <span>👨‍🎓</span> Student
+                </div>
+                <div className="text-xs text-sky-700 break-all font-mono">student.demo@flightpro.com</div>
+                <div className="text-xs text-sky-500 mt-2 font-medium">DemoPass123!</div>
               </div>
-              <div className="p-3 bg-white rounded-md border border-gray-200">
-                <div className="font-semibold text-green-600 mb-1">👨‍✈️ Instructor</div>
-                <div className="text-xs text-gray-600 break-all">instructor.demo@flightpro.com</div>
-                <div className="text-xs text-gray-500 mt-1">DemoPass123!</div>
+              <div className="p-4 card-sky hover:shadow-lg transition-shadow">
+                <div className="font-bold text-aviation-green-600 mb-2 flex items-center gap-2">
+                  <span>👨‍✈️</span> Instructor
+                </div>
+                <div className="text-xs text-sky-700 break-all font-mono">instructor.demo@flightpro.com</div>
+                <div className="text-xs text-sky-500 mt-2 font-medium">DemoPass123!</div>
               </div>
-              <div className="p-3 bg-white rounded-md border border-gray-200">
-                <div className="font-semibold text-purple-600 mb-1">👔 Admin</div>
-                <div className="text-xs text-gray-600 break-all">admin.demo@flightpro.com</div>
-                <div className="text-xs text-gray-500 mt-1">DemoPass123!</div>
+              <div className="p-4 card-sky hover:shadow-lg transition-shadow">
+                <div className="font-bold text-sky-700 mb-2 flex items-center gap-2">
+                  <span>👔</span> Admin
+                </div>
+                <div className="text-xs text-sky-700 break-all font-mono">admin.demo@flightpro.com</div>
+                <div className="text-xs text-sky-500 mt-2 font-medium">DemoPass123!</div>
               </div>
             </div>
-            <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-              <p className="text-xs text-yellow-800">
-                <strong>Note:</strong> If accounts don't exist yet, sign up first, then run: <code className="bg-yellow-100 px-1 rounded">npx tsx scripts/update-demo-roles.ts</code>
+            <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+              <p className="text-xs text-amber-800">
+                <strong>Note:</strong> If accounts don't exist yet, sign up first, then run: <code className="bg-amber-100 px-2 py-1 rounded font-mono">npx tsx scripts/update-demo-roles.ts</code>
               </p>
             </div>
           </CardContent>
@@ -75,19 +96,19 @@ export default function Home() {
         <div className="mt-8 text-center space-y-4">
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/login">
-              <Button size="lg" className="min-h-[44px] w-full sm:w-auto">
+              <button className="btn-sky min-h-[44px] w-full sm:w-auto">
                 Login
-              </Button>
+              </button>
             </Link>
             <Link href="/signup">
-              <Button variant="outline" size="lg" className="min-h-[44px] w-full sm:w-auto">
+              <button className="btn-cloud min-h-[44px] w-full sm:w-auto">
                 Sign Up
-              </Button>
+              </button>
             </Link>
             <Link href="/discovery">
-              <Button variant="outline" size="lg" className="min-h-[44px] w-full sm:w-auto">
-                Book Discovery Flight
-              </Button>
+              <button className="btn-cloud min-h-[44px] w-full sm:w-auto flex items-center gap-2">
+                <span>🛫</span> Book Discovery Flight
+              </button>
             </Link>
           </div>
         </div>

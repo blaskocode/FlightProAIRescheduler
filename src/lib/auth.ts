@@ -17,6 +17,8 @@ export interface AuthUser {
   instructorId?: string;
   adminId?: string;
   schoolId?: string;
+  firstName?: string;
+  lastName?: string;
 }
 
 /**
@@ -63,7 +65,7 @@ export async function getUserRole(firebaseUid: string): Promise<AuthUser | null>
     // Check student
     const student = await prisma.student.findUnique({
       where: { firebaseUid },
-      select: { id: true, email: true, schoolId: true },
+      select: { id: true, email: true, schoolId: true, firstName: true, lastName: true },
     });
     if (student) {
       return {
@@ -72,13 +74,15 @@ export async function getUserRole(firebaseUid: string): Promise<AuthUser | null>
         role: 'student',
         studentId: student.id,
         schoolId: student.schoolId || undefined,
+        firstName: student.firstName,
+        lastName: student.lastName,
       };
     }
 
     // Check instructor
     const instructor = await prisma.instructor.findUnique({
       where: { firebaseUid },
-      select: { id: true, email: true, schoolId: true },
+      select: { id: true, email: true, schoolId: true, firstName: true, lastName: true },
     });
     if (instructor) {
       return {
@@ -87,13 +91,15 @@ export async function getUserRole(firebaseUid: string): Promise<AuthUser | null>
         role: 'instructor',
         instructorId: instructor.id,
         schoolId: instructor.schoolId || undefined,
+        firstName: instructor.firstName,
+        lastName: instructor.lastName,
       };
     }
 
     // Check admin
     const admin = await prisma.admin.findUnique({
       where: { firebaseUid },
-      select: { id: true, email: true },
+      select: { id: true, email: true, firstName: true, lastName: true },
     });
     if (admin) {
       return {
@@ -101,6 +107,8 @@ export async function getUserRole(firebaseUid: string): Promise<AuthUser | null>
         email: admin.email,
         role: 'admin',
         adminId: admin.id,
+        firstName: admin.firstName,
+        lastName: admin.lastName,
         // Admins don't have schoolId (they're system-level)
       };
     }

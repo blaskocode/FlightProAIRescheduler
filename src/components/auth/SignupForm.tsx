@@ -183,29 +183,31 @@ export function SignupForm() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-8 sm:px-6 lg:px-8 pb-20 md:pb-12">
+    <div className="flex min-h-screen items-center justify-center px-4 py-8 sm:px-6 lg:px-8 pb-20 md:pb-12 relative z-10">
       <div className="w-full max-w-md space-y-6 md:space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
-            Create your account
+        {/* Hero Section */}
+        <div className="text-center">
+          <div className="flex justify-center mb-4">
+            <span className="text-5xl md:text-6xl">✈️</span>
+          </div>
+          <h2 className="text-3xl md:text-4xl font-bold text-sky-800 mb-2">
+            Join FlightPro
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Flight Schedule Pro AI Rescheduler
+          <p className="text-sky-600 font-medium">
+            Create your account to get started
           </p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {error && (
-            <div className="rounded-md bg-red-50 border border-red-200 p-4">
+            <div className="rounded-lg bg-aviation-red-50 border border-aviation-red-200 p-4">
               <div className="flex">
                 <div className="flex-shrink-0">
-                  <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                  </svg>
+                  <span className="text-xl">⚠️</span>
                 </div>
                 <div className="ml-3">
-                  <p className="text-sm font-medium text-red-800">{error}</p>
+                  <p className="text-sm font-medium text-aviation-red-800">{error}</p>
                   {error.includes('already registered') && (
-                    <p className="mt-2 text-xs text-red-700">
+                    <p className="mt-2 text-xs text-aviation-red-700">
                       Already have an account? <a href="/login" className="underline font-medium">Sign in here</a>
                     </p>
                   )}
@@ -213,9 +215,9 @@ export function SignupForm() {
               </div>
             </div>
           )}
-          <div className="-space-y-px rounded-md shadow-sm">
+          <div className="space-y-4">
             <div>
-              <label htmlFor="email" className="sr-only">
+              <label htmlFor="email" className="block text-sm font-medium text-sky-700 mb-2">
                 Email address
               </label>
               <input
@@ -224,14 +226,14 @@ export function SignupForm() {
                 type="email"
                 autoComplete="email"
                 required
-                className="relative block w-full rounded-t-md border-0 px-3 py-2 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6"
-                placeholder="Email address"
+                className="card-sky w-full px-4 py-3 text-sky-900 placeholder:text-sky-400 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 sm:text-sm"
+                placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
             </div>
             <div>
-              <label htmlFor="password" className="sr-only">
+              <label htmlFor="password" className="block text-sm font-medium text-sky-700 mb-2">
                 Password
               </label>
               <input
@@ -240,14 +242,14 @@ export function SignupForm() {
                 type="password"
                 autoComplete="new-password"
                 required
-                className="relative block w-full border-0 px-3 py-2 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6"
-                placeholder="Password"
+                className="card-sky w-full px-4 py-3 text-sky-900 placeholder:text-sky-400 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 sm:text-sm"
+                placeholder="Create a password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
             <div>
-              <label htmlFor="confirmPassword" className="sr-only">
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-sky-700 mb-2">
                 Confirm Password
               </label>
               <input
@@ -256,26 +258,32 @@ export function SignupForm() {
                 type="password"
                 autoComplete="new-password"
                 required
-                className="relative block w-full border-0 px-3 py-2 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6"
-                placeholder="Confirm Password"
+                className="card-sky w-full px-4 py-3 text-sky-900 placeholder:text-sky-400 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 sm:text-sm"
+                placeholder="Confirm your password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
               />
             </div>
             <div>
-              <label htmlFor="school" className="sr-only">
+              <label htmlFor="school" className="block text-sm font-medium text-sky-700 mb-2">
                 Flight School
               </label>
               {loadingSchools ? (
-                <div className="relative block w-full rounded-b-md border-0 px-3 py-2 text-gray-500 ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6">
-                  Loading schools...
+                <div className="card-sky w-full px-4 py-3 text-sky-500 sm:text-sm">
+                  <span className="flex items-center gap-2">
+                    <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Loading schools...
+                  </span>
                 </div>
               ) : (
                 <select
                   id="school"
                   name="school"
                   required
-                  className="relative block w-full rounded-b-md border-0 px-3 py-2 text-gray-900 ring-1 ring-inset ring-gray-300 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6"
+                  className="card-sky w-full px-4 py-3 text-sky-900 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 sm:text-sm"
                   value={schoolId}
                   onChange={(e) => setSchoolId(e.target.value)}
                 >
@@ -294,10 +302,10 @@ export function SignupForm() {
             <button
               type="submit"
               disabled={isSubmitting || !email || !password || !confirmPassword || !schoolId}
-              className="group relative flex w-full justify-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white hover:bg-primary-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
+              className="btn-sky w-full disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
             >
               {isSubmitting ? (
-                <span className="flex items-center">
+                <span className="flex items-center justify-center">
                   <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -305,14 +313,16 @@ export function SignupForm() {
                   Creating account...
                 </span>
               ) : (
-                'Sign up'
+                <span className="flex items-center justify-center gap-2">
+                  <span>✈️</span> Create Account
+                </span>
               )}
             </button>
           </div>
           <div className="text-center">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-sky-600">
               Already have an account?{' '}
-              <a href="/login" className="font-medium text-primary-600 hover:text-primary-500">
+              <a href="/login" className="font-semibold text-sky-700 hover:text-sky-800 underline">
                 Sign in
               </a>
             </p>

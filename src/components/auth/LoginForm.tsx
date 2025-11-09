@@ -74,65 +74,75 @@ export function LoginForm() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-8 sm:px-6 lg:px-8 pb-20 md:pb-12">
+    <div className="flex min-h-screen items-center justify-center px-4 py-8 sm:px-6 lg:px-8 pb-20 md:pb-12 relative z-10">
       <div className="w-full max-w-md space-y-6 md:space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
-            Sign in to your account
+        {/* Hero Section */}
+        <div className="text-center">
+          <div className="flex justify-center mb-4">
+            <span className="text-5xl md:text-6xl animate-pulse">✈️</span>
+          </div>
+          <h2 className="text-3xl md:text-4xl font-bold text-sky-800 mb-2">
+            Welcome Back
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
+          <p className="text-sky-600 font-medium">
             Flight Schedule Pro AI Rescheduler
           </p>
         </div>
 
         {/* Demo Credentials Card */}
-        <Card className="border-blue-200 bg-blue-50/50">
+        <Card className="card-elevated border-cloud-200">
           <CardHeader>
-            <CardTitle className="text-lg md:text-xl">🎯 Demo Accounts</CardTitle>
-            <CardDescription>
-              Use these credentials to explore the system. All accounts use password: <strong>DemoPass123!</strong>
+            <CardTitle className="text-lg md:text-xl flex items-center gap-2 text-sky-800">
+              <span>🎯</span> Demo Accounts
+            </CardTitle>
+            <CardDescription className="text-sky-600">
+              Use these credentials to explore the system. All accounts use password: <strong className="text-sky-700">DemoPass123!</strong>
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-              <div className="p-3 bg-white rounded-md border border-gray-200">
-                <div className="font-semibold text-blue-600 mb-1">👨‍🎓 Student</div>
-                <div className="text-xs text-gray-600 break-all">student.demo@flightpro.com</div>
-                <div className="text-xs text-gray-500 mt-1">DemoPass123!</div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+              <div className="p-3 card-sky hover:shadow-lg transition-shadow">
+                <div className="font-bold text-sky-600 mb-1 flex items-center gap-1">
+                  <span>👨‍🎓</span> Student
+                </div>
+                <div className="text-xs text-sky-700 break-all font-mono">student.demo@flightpro.com</div>
+                <div className="text-xs text-sky-500 mt-1 font-medium">DemoPass123!</div>
               </div>
-              <div className="p-3 bg-white rounded-md border border-gray-200">
-                <div className="font-semibold text-green-600 mb-1">👨‍✈️ Instructor</div>
-                <div className="text-xs text-gray-600 break-all">instructor.demo@flightpro.com</div>
-                <div className="text-xs text-gray-500 mt-1">DemoPass123!</div>
+              <div className="p-3 card-sky hover:shadow-lg transition-shadow">
+                <div className="font-bold text-aviation-green-600 mb-1 flex items-center gap-1">
+                  <span>👨‍✈️</span> Instructor
+                </div>
+                <div className="text-xs text-sky-700 break-all font-mono">instructor.demo@flightpro.com</div>
+                <div className="text-xs text-sky-500 mt-1 font-medium">DemoPass123!</div>
               </div>
-              <div className="p-3 bg-white rounded-md border border-gray-200">
-                <div className="font-semibold text-purple-600 mb-1">👔 Admin</div>
-                <div className="text-xs text-gray-600 break-all">admin.demo@flightpro.com</div>
-                <div className="text-xs text-gray-500 mt-1">DemoPass123!</div>
+              <div className="p-3 card-sky hover:shadow-lg transition-shadow">
+                <div className="font-bold text-sky-700 mb-1 flex items-center gap-1">
+                  <span>👔</span> Admin
+                </div>
+                <div className="text-xs text-sky-700 break-all font-mono">admin.demo@flightpro.com</div>
+                <div className="text-xs text-sky-500 mt-1 font-medium">DemoPass123!</div>
               </div>
             </div>
-            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
-              <p className="text-xs text-blue-800">
+            <div className="mt-4 p-3 bg-sky-50 border border-sky-200 rounded-lg">
+              <p className="text-xs text-sky-800">
                 <strong>First time?</strong> These demo accounts need to be created first. 
-                <a href="/signup" className="underline font-medium ml-1">Sign up</a> with these credentials, 
-                then run <code className="bg-blue-100 px-1 rounded text-xs">npx tsx scripts/update-demo-roles.ts</code> to set roles.
+                <a href="/signup" className="underline font-medium ml-1 text-sky-600 hover:text-sky-700">Sign up</a> with these credentials, 
+                then run <code className="bg-sky-100 px-1 rounded text-xs font-mono">npx tsx scripts/update-demo-roles.ts</code> to set roles.
               </p>
             </div>
           </CardContent>
         </Card>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {error && (
-            <div className="rounded-md bg-red-50 border border-red-200 p-4">
+            <div className="rounded-lg bg-aviation-red-50 border border-aviation-red-200 p-4">
               <div className="flex">
                 <div className="flex-shrink-0">
-                  <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                  </svg>
+                  <span className="text-xl">⚠️</span>
                 </div>
                 <div className="ml-3">
-                  <p className="text-sm font-medium text-red-800">{error}</p>
+                  <p className="text-sm font-medium text-aviation-red-800">{error}</p>
                   {error.includes('Invalid email or password') && (
-                    <p className="mt-2 text-xs text-red-700">
+                    <p className="mt-2 text-xs text-aviation-red-700">
                       Don't have an account? <a href="/signup" className="underline font-medium">Sign up here</a>
                     </p>
                   )}
@@ -140,9 +150,9 @@ export function LoginForm() {
               </div>
             </div>
           )}
-          <div className="-space-y-px rounded-md shadow-sm">
+          <div className="space-y-4">
             <div>
-              <label htmlFor="email" className="sr-only">
+              <label htmlFor="email" className="block text-sm font-medium text-sky-700 mb-2">
                 Email address
               </label>
               <input
@@ -151,14 +161,14 @@ export function LoginForm() {
                 type="email"
                 autoComplete="email"
                 required
-                className="relative block w-full rounded-t-md border-0 px-3 py-2 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6"
-                placeholder="Email address"
+                className="card-sky w-full px-4 py-3 text-sky-900 placeholder:text-sky-400 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 sm:text-sm"
+                placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
             </div>
             <div>
-              <label htmlFor="password" className="sr-only">
+              <label htmlFor="password" className="block text-sm font-medium text-sky-700 mb-2">
                 Password
               </label>
               <input
@@ -167,8 +177,8 @@ export function LoginForm() {
                 type="password"
                 autoComplete="current-password"
                 required
-                className="relative block w-full rounded-b-md border-0 px-3 py-2 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6"
-                placeholder="Password"
+                className="card-sky w-full px-4 py-3 text-sky-900 placeholder:text-sky-400 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 sm:text-sm"
+                placeholder="Enter your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
@@ -179,10 +189,10 @@ export function LoginForm() {
             <button
               type="submit"
               disabled={isSubmitting || !email || !password}
-              className="group relative flex w-full justify-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white hover:bg-primary-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
+              className="btn-sky w-full disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
             >
               {isSubmitting ? (
-                <span className="flex items-center">
+                <span className="flex items-center justify-center">
                   <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -190,14 +200,16 @@ export function LoginForm() {
                   Signing in...
                 </span>
               ) : (
-                'Sign in'
+                <span className="flex items-center justify-center gap-2">
+                  <span>🛫</span> Sign in
+                </span>
               )}
             </button>
           </div>
           <div className="text-center">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-sky-600">
               Don't have an account?{' '}
-              <a href="/signup" className="font-medium text-primary-600 hover:text-primary-500">
+              <a href="/signup" className="font-semibold text-sky-700 hover:text-sky-800 underline">
                 Sign up
               </a>
             </p>

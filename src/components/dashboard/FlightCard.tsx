@@ -54,17 +54,17 @@ export function FlightCard({
   const hasRoute = flight.route || (flight.departureAirport && flight.destinationAirport);
 
   const getStatusBadgeClass = (status: string) => {
-    if (status === 'CONFIRMED') return 'bg-green-100 text-green-800';
-    if (status === 'PENDING') return 'bg-blue-100 text-blue-800';
-    if (status === 'RESCHEDULE_PENDING') return 'bg-yellow-100 text-yellow-800';
-    if (status === 'RESCHEDULE_CONFIRMED') return 'bg-purple-100 text-purple-800';
-    if (status === 'IN_PROGRESS') return 'bg-indigo-100 text-indigo-800';
-    if (status === 'COMPLETED') return 'bg-gray-100 text-gray-800';
+    if (status === 'CONFIRMED') return 'bg-aviation-green-100 text-aviation-green-700 border border-aviation-green-200';
+    if (status === 'PENDING') return 'bg-sky-100 text-sky-700 border border-sky-200';
+    if (status === 'RESCHEDULE_PENDING') return 'bg-amber-100 text-amber-700 border border-amber-200';
+    if (status === 'RESCHEDULE_CONFIRMED') return 'bg-sky-200 text-sky-800 border border-sky-300';
+    if (status === 'IN_PROGRESS') return 'bg-sky-200 text-sky-800 border border-sky-300';
+    if (status === 'COMPLETED') return 'bg-cloud-200 text-cloud-800 border border-cloud-300';
     if (['WEATHER_CANCELLED', 'MAINTENANCE_CANCELLED', 'STUDENT_CANCELLED', 'INSTRUCTOR_CANCELLED'].includes(status)) {
-      return 'bg-red-100 text-red-800';
+      return 'bg-aviation-red-100 text-aviation-red-700 border border-aviation-red-200';
     }
-    if (status === 'RESCHEDULED') return 'bg-gray-200 text-gray-700';
-    return 'bg-gray-100 text-gray-800';
+    if (status === 'RESCHEDULED') return 'bg-cloud-200 text-cloud-700 border border-cloud-300';
+    return 'bg-cloud-100 text-cloud-700 border border-cloud-200';
   };
 
   const renderRescheduleButton = () => {
@@ -164,43 +164,55 @@ export function FlightCard({
     (flight.status === 'RESCHEDULE_PENDING' || flight.status === 'MAINTENANCE_CANCELLED');
 
   return (
-    <div className="rounded-lg border bg-white p-3 sm:p-4 shadow-sm hover:shadow-md active:shadow-lg transition-shadow touch-manipulation w-full">
-      <div className="flex flex-col gap-3 sm:gap-4">
+    <div className="card-elevated p-4 sm:p-5 touch-manipulation w-full group">
+      <div className="flex flex-col gap-4 sm:gap-5">
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-base sm:text-lg break-words">
-            {new Date(flight.scheduledStart).toLocaleString()}
-          </h3>
-          <p className="text-xs sm:text-sm text-gray-600 mt-1 break-words">
-            {flight.lessonTitle || 'Flight Lesson'}
-          </p>
-          <div className="flex flex-wrap gap-1.5 sm:gap-2 mt-2 text-xs sm:text-sm text-gray-500">
-            <span className="break-words">
-              {flight.student.firstName} {flight.student.lastName}
-            </span>
+          <div className="flex items-start justify-between gap-3 mb-2">
+            <div className="flex-1">
+              <h3 className="font-bold text-lg sm:text-xl text-sky-900 break-words">
+                {new Date(flight.scheduledStart).toLocaleString()}
+              </h3>
+              <p className="text-sm sm:text-base text-sky-600 mt-1 break-words font-medium">
+                {flight.lessonTitle || 'Flight Lesson'}
+              </p>
+            </div>
+            <span className="text-3xl opacity-20 group-hover:opacity-30 transition-opacity">✈️</span>
+          </div>
+          <div className="flex flex-wrap gap-2 sm:gap-3 mt-3">
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-sky-50 rounded-full">
+              <span className="text-xs">👤</span>
+              <span className="text-xs sm:text-sm text-sky-700 font-medium break-words">
+                {flight.student.firstName} {flight.student.lastName}
+              </span>
+            </div>
             {flight.instructor && (
-              <span className="break-words">
-                • {flight.instructor.firstName} {flight.instructor.lastName}
-              </span>
+              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-sky-50 rounded-full">
+                <span className="text-xs">👨‍✈️</span>
+                <span className="text-xs sm:text-sm text-sky-700 font-medium break-words">
+                  {flight.instructor.firstName} {flight.instructor.lastName}
+                </span>
+              </div>
             )}
-            {showRescheduledAircraft ? (
-              <span className="break-words">
-                • {flight.aircraft.tailNumber} → {rescheduleDetail.newAircraftTailNumber}
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-sky-50 rounded-full">
+              <span className="text-xs">🛩️</span>
+              <span className="text-xs sm:text-sm text-sky-700 font-medium break-words">
+                {showRescheduledAircraft 
+                  ? `${flight.aircraft.tailNumber} → ${rescheduleDetail.newAircraftTailNumber}`
+                  : flight.aircraft.tailNumber}
               </span>
-            ) : (
-              <span className="break-words">• {flight.aircraft.tailNumber}</span>
-            )}
+            </div>
           </div>
         </div>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
-          <div className="flex flex-col gap-1">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 pt-3 border-t border-cloud-200">
+          <div className="flex flex-col gap-2">
             <span
-              className={`rounded-full px-2 sm:px-3 py-1 text-xs font-medium self-start ${getStatusBadgeClass(flight.status)}`}
+              className={`rounded-full px-3 py-1.5 text-xs font-semibold self-start ${getStatusBadgeClass(flight.status)}`}
             >
-              {flight.status}
+              {flight.status.replace(/_/g, ' ')}
             </span>
             {flight.weatherOverride && (
-              <span className="text-xs text-yellow-600 font-medium">
-                ⚠️ Weather Overridden
+              <span className="text-xs text-amber-600 font-medium flex items-center gap-1">
+                <span>⚠️</span> Weather Overridden
               </span>
             )}
           </div>
@@ -212,15 +224,15 @@ export function FlightCard({
                 onClick={() => setShowRoute(!showRoute)}
                 size="sm"
                 variant="outline"
-                className="text-xs w-full sm:w-auto"
+                className="text-xs w-full sm:w-auto border-sky-300 text-sky-700 hover:bg-sky-50 hover:border-sky-400"
               >
-                {showRoute ? 'Hide Route' : 'Show Route'}
+                {showRoute ? '🗺️ Hide Route' : '🗺️ Show Route'}
               </Button>
             )}
           </div>
         </div>
         {showRoute && hasRoute && (
-          <div className="mt-4 border-t pt-4">
+          <div className="mt-4 pt-4 border-t border-cloud-200">
             <RouteVisualization
               route={flight.route || undefined}
               flightId={flight.id}

@@ -59,11 +59,16 @@ export function TopNavigation() {
   };
 
   return (
-    <nav className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm hidden md:block">
+    <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-cloud-200 shadow-cloud hidden md:block">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center space-x-1 sm:space-x-2">
-            <span className="text-xl font-bold text-blue-600 mr-4">FlightPro</span>
+            <div className="flex items-center gap-2 mr-6">
+              <span className="text-2xl">✈️</span>
+              <span className="text-xl font-bold bg-sky-gradient bg-clip-text text-transparent">
+                FlightPro
+              </span>
+            </div>
             {navItems.map((item) => {
               const isActive = pathname === item.href || pathname?.startsWith(item.href + '/');
               
@@ -72,11 +77,11 @@ export function TopNavigation() {
                   key={item.href}
                   onClick={() => router.push(item.href)}
                   className={cn(
-                    'flex items-center gap-2 px-3 sm:px-4 py-2 rounded-md text-sm font-medium transition-colors',
+                    'flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200',
                     'min-h-[44px] touch-manipulation',
                     isActive
-                      ? 'bg-blue-50 text-blue-700'
-                      : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                      ? 'bg-sky-gradient text-white shadow-sky'
+                      : 'text-sky-700 hover:bg-sky-50 hover:text-sky-900'
                   )}
                   aria-label={item.label}
                 >
@@ -88,7 +93,7 @@ export function TopNavigation() {
           </div>
           <div className="flex items-center gap-4">
             {authUser && (
-              <span className="text-sm text-gray-600 hidden lg:inline">
+              <span className="text-sm text-sky-600 hidden lg:inline font-medium">
                 {authUser.email}
               </span>
             )}
@@ -96,7 +101,7 @@ export function TopNavigation() {
               variant="outline"
               onClick={handleSignOut}
               size="sm"
-              className="min-h-[44px]"
+              className="min-h-[44px] border-sky-300 text-sky-700 hover:bg-sky-50 hover:border-sky-400"
             >
               Sign Out
             </Button>

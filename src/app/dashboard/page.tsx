@@ -57,87 +57,130 @@ export default function DashboardPage() {
     return null;
   }
 
+  const metricsSchoolId = authUser?.schoolId || selectedSchoolId || undefined;
+
+  // Get display name: firstName + lastName, or fallback to email
+  const getDisplayName = () => {
+    if (authUser?.firstName && authUser?.lastName) {
+      return `${authUser.firstName} ${authUser.lastName}`;
+    }
+    if (authUser?.firstName) {
+      return authUser.firstName;
+    }
+    return authUser?.email || user?.email || 'User';
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 p-3 sm:p-4 md:p-6 lg:p-8 pb-20 md:pb-8">
-      <div className="mx-auto max-w-7xl w-full">
-        <div className="mb-4 sm:mb-6 md:mb-8 flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:gap-4">
-          <div className="flex-1 min-w-0">
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">Dashboard</h1>
-            <p className="mt-1 sm:mt-2 text-xs sm:text-sm md:text-base text-gray-600 break-words">
-              Welcome, {authUser?.email || user.email}!
+    <div className="min-h-screen p-3 sm:p-4 md:p-6 lg:p-8 pb-20 md:pb-8 relative z-10">
+      <div className="mx-auto max-w-7xl w-full space-y-4 sm:space-y-6">
+        {/* Compact Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-sky-900 flex items-center gap-2">
+              <span className="text-3xl">✈️</span>
+              Dashboard
+            </h1>
+            <p className="text-sm sm:text-base text-sky-600 mt-1">
+              Welcome back, {getDisplayName()}
             </p>
-            <div className="mt-1 flex flex-wrap items-center gap-2 sm:gap-4">
-              <p className="text-xs sm:text-sm text-gray-500">
-                Role: {loading || !authUser ? (
-                  <span className="inline-block w-16 h-4 bg-gray-200 rounded animate-pulse"></span>
-                ) : (
-                  <span className="capitalize">{authUser.role}</span>
-                )}
-              </p>
-              {/* Show school switcher for super admins */}
-              {(authUser?.role === 'admin' || authUser?.role === 'super_admin') && !authUser?.schoolId && (
-                <SchoolSwitcher />
-              )}
-            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-xs sm:text-sm text-sky-600 bg-sky-50 px-3 py-1.5 rounded-full border border-sky-200">
+              <span className="capitalize font-semibold text-sky-700">{authUser?.role || 'user'}</span>
+            </span>
+            {(authUser?.role === 'admin' || authUser?.role === 'super_admin') && !authUser?.schoolId && (
+              <SchoolSwitcher />
+            )}
           </div>
         </div>
 
-        {/* Metrics Section - Show to anyone with schoolId or super admins with selected school */}
-        {(() => {
-          // Get schoolId: from authUser if available, or from selectedSchoolId for super admins
-          const metricsSchoolId = authUser?.schoolId || selectedSchoolId || undefined;
-          
-          return metricsSchoolId ? (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 md:gap-6 mb-4 sm:mb-6">
-              <MetricsDashboard schoolId={metricsSchoolId} />
-              <WeatherAnalyticsDashboard schoolId={metricsSchoolId} />
-            </div>
-          ) : null;
-        })()}
-
-        {/* Main Dashboard Content - Overview Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
-          <div className="lg:col-span-2 space-y-3 sm:space-y-4 md:space-y-6 min-w-0">
-            {/* Quick Actions Card */}
-            <div className="bg-white rounded-lg border shadow-sm p-4 sm:p-6">
-              <h2 className="text-lg sm:text-xl font-semibold mb-4">Quick Actions</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <button
-                  onClick={() => router.push('/flights')}
-                  className="flex items-center gap-3 p-4 border rounded-lg hover:bg-gray-50 transition-colors text-left min-h-[44px]"
-                >
-                  <span className="text-2xl">✈️</span>
-                  <div>
-                    <div className="font-medium">View All Flights</div>
-                    <div className="text-sm text-gray-500">Manage your flight schedule</div>
-                  </div>
-                </button>
-                {authUser?.role === 'instructor' && (
-                  <div className="flex items-center gap-3 p-4 border rounded-lg bg-gray-50">
-                    <span className="text-2xl">👥</span>
-                    <div>
-                      <div className="font-medium">My Students</div>
-                      <div className="text-sm text-gray-500">View student list in sidebar</div>
-                    </div>
-                  </div>
-                )}
-                {(authUser?.role === 'instructor' || authUser?.role === 'admin') && (
-                  <div className="flex items-center gap-3 p-4 border rounded-lg bg-gray-50">
-                    <span className="text-2xl">🔧</span>
-                    <div>
-                      <div className="font-medium">Report Squawk</div>
-                      <div className="text-sm text-gray-500">Use the form in sidebar</div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
+        {/* Quick Actions - Prominent at Top */}
+        <div className="card-elevated p-4 sm:p-6">
+          <h2 className="text-lg sm:text-xl font-bold text-sky-800 mb-4 flex items-center gap-2">
+            <span>⚡</span> Quick Actions
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+            <button
+              onClick={() => router.push('/flights')}
+              className="group flex flex-col items-center justify-center gap-2 p-4 sm:p-5 card-sky hover:shadow-xl hover:scale-[1.02] transition-all duration-200 text-center min-h-[100px]"
+            >
+              <span className="text-3xl sm:text-4xl group-hover:scale-110 transition-transform duration-200">✈️</span>
+              <div className="font-semibold text-sm sm:text-base text-sky-800 group-hover:text-sky-900">View Flights</div>
+              <div className="text-xs text-sky-600 hidden sm:block">Manage schedule</div>
+            </button>
+            {authUser?.role === 'instructor' && (
+              <button
+                onClick={() => {
+                  const studentSection = document.getElementById('students-section');
+                  studentSection?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="group flex flex-col items-center justify-center gap-2 p-4 sm:p-5 card-sky hover:shadow-xl hover:scale-[1.02] transition-all duration-200 text-center min-h-[100px]"
+              >
+                <span className="text-3xl sm:text-4xl group-hover:scale-110 transition-transform duration-200">👥</span>
+                <div className="font-semibold text-sm sm:text-base text-sky-800 group-hover:text-sky-900">My Students</div>
+                <div className="text-xs text-sky-600 hidden sm:block">View students</div>
+              </button>
+            )}
+            {(authUser?.role === 'instructor' || authUser?.role === 'admin') && (
+              <button
+                onClick={() => {
+                  const squawkSection = document.getElementById('squawk-section');
+                  squawkSection?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="group flex flex-col items-center justify-center gap-2 p-4 sm:p-5 card-sky hover:shadow-xl hover:scale-[1.02] transition-all duration-200 text-center min-h-[100px]"
+              >
+                <span className="text-3xl sm:text-4xl group-hover:scale-110 transition-transform duration-200">🔧</span>
+                <div className="font-semibold text-sm sm:text-base text-sky-800 group-hover:text-sky-900">Report Squawk</div>
+                <div className="text-xs text-sky-600 hidden sm:block">Aircraft issues</div>
+              </button>
+            )}
+            {metricsSchoolId && (
+              <button
+                onClick={() => {
+                  const metricsSection = document.getElementById('metrics-section');
+                  metricsSection?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="group flex flex-col items-center justify-center gap-2 p-4 sm:p-5 card-sky hover:shadow-xl hover:scale-[1.02] transition-all duration-200 text-center min-h-[100px]"
+              >
+                <span className="text-3xl sm:text-4xl group-hover:scale-110 transition-transform duration-200">📊</span>
+                <div className="font-semibold text-sm sm:text-base text-sky-800 group-hover:text-sky-900">View Metrics</div>
+                <div className="text-xs text-sky-600 hidden sm:block">Analytics</div>
+              </button>
+            )}
           </div>
-          <div className="space-y-3 sm:space-y-4 md:space-y-6 min-w-0">
-            {authUser?.role === 'instructor' && <StudentList />}
-            {(authUser?.role === 'instructor' || authUser?.role === 'admin') && <SquawkReportCard />}
-            <WeatherMapDashboard schoolId={authUser?.schoolId || selectedSchoolId || undefined} />
+        </div>
+
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+          {/* Left Column - Primary Content */}
+          <div className="lg:col-span-2 space-y-4 sm:space-y-6 min-w-0">
+            {/* Weather Alerts - High Priority */}
             <WeatherAlerts />
+
+            {/* Metrics Section */}
+            {metricsSchoolId && (
+              <div id="metrics-section" className="space-y-4 sm:space-y-6">
+                <MetricsDashboard schoolId={metricsSchoolId} />
+                <WeatherAnalyticsDashboard schoolId={metricsSchoolId} />
+              </div>
+            )}
+
+            {/* Weather Map */}
+            <WeatherMapDashboard schoolId={metricsSchoolId} />
+          </div>
+
+          {/* Right Column - Secondary Widgets */}
+          <div className="space-y-4 sm:space-y-6 min-w-0">
+            {authUser?.role === 'instructor' && (
+              <div id="students-section">
+                <StudentList />
+              </div>
+            )}
+            {(authUser?.role === 'instructor' || authUser?.role === 'admin') && (
+              <div id="squawk-section">
+                <SquawkReportCard />
+              </div>
+            )}
           </div>
         </div>
       </div>
