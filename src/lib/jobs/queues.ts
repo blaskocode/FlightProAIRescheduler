@@ -7,13 +7,20 @@ import Redis from 'ioredis';
  */
 let connection: Redis | null = null;
 
-function getConnection(): Redis | null {
-  // Don't create connection during build phase
-  if (process.env.NEXT_PHASE === 'phase-production-build') {
-    return null;
+function getConnection(): Redis {
+  // During build phase, create a dummy connection that won't actually connect
+  if (process.env.NEXT_PHASE === 'phase-production-build' || !process.env.REDIS_URL) {
+    // Create a dummy Redis instance that uses lazyConnect and won't fail during build
+    return new Redis('redis://localhost:6379', {
+      maxRetriesPerRequest: null,
+      lazyConnect: true,
+      enableOfflineQueue: false,
+      retryStrategy: () => null, // Don't retry during build
+      connectTimeout: 1, // Very short timeout
+    });
   }
 
-  if (!connection && process.env.REDIS_URL) {
+  if (!connection) {
     try {
       connection = new Redis(process.env.REDIS_URL, {
         maxRetriesPerRequest: null,
@@ -27,22 +34,25 @@ function getConnection(): Redis | null {
         enableOfflineQueue: false,
       });
     } catch (error) {
-      // Silently fail during build - Redis will be available at runtime
-      return null;
+      // Fallback to dummy connection if creation fails
+      return new Redis('redis://localhost:6379', {
+        maxRetriesPerRequest: null,
+        lazyConnect: true,
+        enableOfflineQueue: false,
+        retryStrategy: () => null,
+      });
     }
   }
   return connection;
 }
 
-// Create connection only if REDIS_URL is available
-const redisConnection = process.env.REDIS_URL && process.env.NEXT_PHASE !== 'phase-production-build'
-  ? getConnection()
-  : null;
+// Get connection (will be dummy during build, real at runtime)
+const redisConnection = getConnection();
 
 // Weather Check Queue
 // Configure to keep completed/failed jobs for status tracking
 export const weatherCheckQueue = new Queue('weather-check', { 
-  connection: redisConnection || undefined,
+  connection: redisConnection,
   defaultJobOptions: {
     removeOnComplete: {
       age: 3600, // Keep completed jobs for 1 hour
@@ -57,29 +67,29 @@ export const weatherCheckQueue = new Queue('weather-check', {
 
 // Currency Check Queue
 export const currencyCheckQueue = new Queue('currency-check', { 
-  connection: redisConnection || undefined 
+  connection: redisConnection 
 });
 
 // Maintenance Reminder Queue
 export const maintenanceReminderQueue = new Queue('maintenance-reminder', { 
-  connection: redisConnection || undefined 
+  connection: redisConnection 
 });
 
 // Reschedule Expiration Queue
 export const rescheduleExpirationQueue = new Queue('reschedule-expiration', { 
-  connection: redisConnection || undefined 
+  connection: redisConnection 
 });
 
 export const predictionGenerationQueue = new Queue('prediction-generation', { 
-  connection: redisConnection || undefined 
+  connection: redisConnection 
 });
 
 // Notification Queue
 export const notificationQueue = new Queue('notification', { 
-  connection: redisConnection || undefined 
+  connection: redisConnection 
 });
 
-export { getConnection as connection };
+export { redisConnection as connection };
 
 // Import workers to ensure they start when the module is loaded
 // This is important for Next.js - workers need to be imported somewhere
