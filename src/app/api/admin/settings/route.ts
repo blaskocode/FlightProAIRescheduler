@@ -6,7 +6,16 @@ import { getUserSchoolId } from '@/lib/auth/school-scope';
 export async function GET(request: NextRequest) {
   try {
     console.log('GET /api/admin/settings - Starting...');
-    const authUser = await requireAuth(request);
+    let authUser;
+    try {
+      authUser = await requireAuth(request);
+    } catch (authError: any) {
+      console.error('Authentication error:', authError);
+      return NextResponse.json(
+        { error: authError.message || 'Authentication required' },
+        { status: 401 }
+      );
+    }
     console.log('Auth user:', { role: authUser.role, adminId: authUser.adminId, studentId: authUser.studentId, instructorId: authUser.instructorId });
     
     // Get schoolId: from user's school or from query param (for super admins)
@@ -14,11 +23,23 @@ export async function GET(request: NextRequest) {
     let schoolId: string | null = null;
     
     if (schoolIdParam) {
-      // Super admin can specify schoolId
-      schoolId = schoolIdParam;
-      console.log('Using schoolId from query param:', schoolId);
-    } else {
-      // Get user's school
+      // Validate that the schoolId exists before using it
+      const schoolExists = await prisma.school.findUnique({
+        where: { id: schoolIdParam },
+        select: { id: true },
+      });
+      
+      if (schoolExists) {
+        schoolId = schoolIdParam;
+        console.log('Using schoolId from query param:', schoolId);
+      } else {
+        console.warn('Invalid schoolId from query param, ignoring:', schoolIdParam);
+        // Fall through to get user's school
+      }
+    }
+    
+    // If no valid schoolId from param, get user's school
+    if (!schoolId) {
       console.log('Getting user schoolId...');
       schoolId = await getUserSchoolId(authUser);
       console.log('User schoolId:', schoolId);
@@ -69,16 +90,34 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('Error fetching settings:', error);
     console.error('Error stack:', error.stack);
+    
+    // Handle authentication errors
+    if (error.message?.includes('Authentication') || error.message?.includes('not found')) {
+      return NextResponse.json(
+        { error: error.message || 'Authentication required' },
+        { status: 401 }
+      );
+    }
+    
     return NextResponse.json(
-      { error: error.message || 'Internal server error', details: error.stack },
-      { status: error.message?.includes('Authentication') ? 401 : 500 }
+      { error: error.message || 'Internal server error' },
+      { status: 500 }
     );
   }
 }
 
 export async function PATCH(request: NextRequest) {
   try {
-    const authUser = await requireAuth(request);
+    let authUser;
+    try {
+      authUser = await requireAuth(request);
+    } catch (authError: any) {
+      console.error('Authentication error:', authError);
+      return NextResponse.json(
+        { error: authError.message || 'Authentication required' },
+        { status: 401 }
+      );
+    }
     const body = await request.json();
     const { weatherApiEnabled, weatherCheckFrequency, schoolId: schoolIdParam } = body;
 

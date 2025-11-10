@@ -61,7 +61,7 @@ interface Settings {
 }
 
 export function SettingsPage() {
-  const { user } = useAuth();
+  const { user, authUser } = useAuth();
   const [settings, setSettings] = useState<Settings>({
     weatherApiEnabled: false,
     weatherCheckFrequency: 'hourly',
@@ -79,11 +79,12 @@ export function SettingsPage() {
   const [invalidateAirportCode, setInvalidateAirportCode] = useState('');
 
   useEffect(() => {
-    if (user) {
+    // Only fetch settings when user is authenticated and synced
+    if (user && authUser) {
       fetchSettings();
       fetchCacheStats();
     }
-  }, [user]);
+  }, [user, authUser]);
 
   async function fetchCacheStats() {
     try {
@@ -159,7 +160,14 @@ export function SettingsPage() {
   async function fetchSettings() {
     try {
       setLoading(true);
+      setError(null);
       
+      // Wait for user to be authenticated and synced
+      if (!user || !authUser) {
+        console.log('Waiting for user authentication...');
+        return;
+      }
+
       // Get Firebase token for authentication
       let token: string | null = null;
       if (user) {
@@ -175,13 +183,30 @@ export function SettingsPage() {
           'Authorization': `Bearer ${token}` 
         } : {},
       });
+      
       if (response.ok) {
         const data = await response.json();
         setSettings(data);
       } else {
-        setError('Failed to load settings');
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('Settings fetch error:', response.status, errorData);
+        
+        // If school not found, clear invalid schoolId from localStorage and retry
+        if (response.status === 404 && errorData.error?.includes('School not found')) {
+          const schoolId = typeof window !== 'undefined' ? localStorage.getItem('selectedSchoolId') : null;
+          if (schoolId) {
+            console.warn('Invalid schoolId in localStorage, clearing:', schoolId);
+            localStorage.removeItem('selectedSchoolId');
+            // Retry without schoolId
+            setTimeout(() => fetchSettings(), 100);
+            return;
+          }
+        }
+        
+        setError(errorData.error || `Failed to load settings (${response.status})`);
       }
     } catch (err: any) {
+      console.error('Settings fetch exception:', err);
       setError(err.message || 'Failed to load settings');
     } finally {
       setLoading(false);
