@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, FormEvent, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn } from '@/lib/auth';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import Link from 'next/link';
 
 export function LoginForm() {
   const [email, setEmail] = useState('');
@@ -12,7 +13,20 @@ export function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, loading } = useAuth();
+
+  // Auto-populate from URL params (for demo badges)
+  useEffect(() => {
+    const emailParam = searchParams.get('email');
+    const passwordParam = searchParams.get('password');
+    if (emailParam) {
+      setEmail(emailParam);
+    }
+    if (passwordParam) {
+      setPassword(passwordParam);
+    }
+  }, [searchParams]);
 
   // Redirect if already logged in (wait for loading to complete)
   useEffect(() => {
@@ -101,27 +115,51 @@ export function LoginForm() {
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-              <div className="p-3 card-sky hover:shadow-lg transition-shadow">
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail('demo.student@flightpro.com');
+                  setPassword('DemoPass123!');
+                }}
+                className="p-3 card-sky hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-sky-300 rounded-lg text-left"
+              >
                 <div className="font-bold text-sky-600 mb-1 flex items-center gap-1">
                   <span>👨‍🎓</span> Student
                 </div>
-                <div className="text-xs text-sky-700 break-all font-mono">student.demo@flightpro.com</div>
+                <div className="text-xs text-sky-700 break-all font-mono">demo.student@flightpro.com</div>
                 <div className="text-xs text-sky-500 mt-1 font-medium">DemoPass123!</div>
-              </div>
-              <div className="p-3 card-sky hover:shadow-lg transition-shadow">
+                <div className="text-xs text-sky-600 mt-1 font-semibold">Click to fill →</div>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail('demo.instructor@flightpro.com');
+                  setPassword('DemoPass123!');
+                }}
+                className="p-3 card-sky hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-aviation-green-300 rounded-lg text-left"
+              >
                 <div className="font-bold text-aviation-green-600 mb-1 flex items-center gap-1">
                   <span>👨‍✈️</span> Instructor
                 </div>
-                <div className="text-xs text-sky-700 break-all font-mono">instructor.demo@flightpro.com</div>
+                <div className="text-xs text-sky-700 break-all font-mono">demo.instructor@flightpro.com</div>
                 <div className="text-xs text-sky-500 mt-1 font-medium">DemoPass123!</div>
-              </div>
-              <div className="p-3 card-sky hover:shadow-lg transition-shadow">
+                <div className="text-xs text-aviation-green-600 mt-1 font-semibold">Click to fill →</div>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail('demo.admin@flightpro.com');
+                  setPassword('DemoPass123!');
+                }}
+                className="p-3 card-sky hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-sky-400 rounded-lg text-left"
+              >
                 <div className="font-bold text-sky-700 mb-1 flex items-center gap-1">
                   <span>👔</span> Admin
                 </div>
-                <div className="text-xs text-sky-700 break-all font-mono">admin.demo@flightpro.com</div>
+                <div className="text-xs text-sky-700 break-all font-mono">demo.admin@flightpro.com</div>
                 <div className="text-xs text-sky-500 mt-1 font-medium">DemoPass123!</div>
-              </div>
+                <div className="text-xs text-sky-700 mt-1 font-semibold">Click to fill →</div>
+              </button>
             </div>
             <div className="mt-4 p-3 bg-sky-50 border border-sky-200 rounded-lg">
               <p className="text-xs text-sky-800">

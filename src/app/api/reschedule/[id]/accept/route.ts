@@ -30,6 +30,7 @@ export async function POST(
             departureAirport: true,
             destinationAirport: true,
             route: true,
+            scheduledStart: true,
             instructor: {
               select: { id: true },
             },
@@ -89,8 +90,7 @@ export async function POST(
         );
       }
       
-      // Check if instructor matches original flight instructor OR selected reschedule option instructor
-      const originalFlightInstructorId = rescheduleRequest.flight.instructor?.id;
+      // ONLY the NEW instructor (from the selected option) can confirm
       const suggestions = Array.isArray(rescheduleRequest.suggestions)
         ? rescheduleRequest.suggestions
         : JSON.parse((rescheduleRequest.suggestions as any) || '[]');
@@ -100,11 +100,17 @@ export async function POST(
         : null;
       const selectedInstructorId = selectedSuggestion?.instructorId;
       
-      // Allow if instructor matches original flight instructor OR selected reschedule option instructor
-      if (authUser.instructorId !== originalFlightInstructorId && 
-          authUser.instructorId !== selectedInstructorId) {
+      if (!selectedInstructorId) {
         return NextResponse.json(
-          { error: 'Unauthorized - you are not the instructor for this flight' },
+          { error: 'No instructor selected in reschedule option' },
+          { status: 400 }
+        );
+      }
+      
+      // Only allow the NEW instructor (from selected option) to confirm
+      if (authUser.instructorId !== selectedInstructorId) {
+        return NextResponse.json(
+          { error: 'Unauthorized - this reschedule request is assigned to a different instructor' },
           { status: 403 }
         );
       }
@@ -163,6 +169,10 @@ export async function POST(
           status: 'PENDING_INSTRUCTOR',
         },
       });
+      
+      // Note: If instructor changed, the old instructor will no longer see this reschedule request
+      // (it will be filtered out by the reschedule API) and the original flight will be hidden
+      // once the new instructor confirms (status changes to RESCHEDULED)
     } else if (confirmedBy === 'instructor') {
       // Validate required fields
       if (!selected.instructorId || !selected.aircraftId || !selected.slot) {

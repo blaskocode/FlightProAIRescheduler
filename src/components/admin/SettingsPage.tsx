@@ -239,8 +239,35 @@ export function SettingsPage() {
       });
 
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to save settings');
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('Settings save error:', response.status, errorData);
+        
+        // If school not found, clear invalid schoolId from localStorage and retry
+        if (response.status === 404 && errorData.error?.includes('School not found')) {
+          const schoolId = typeof window !== 'undefined' ? localStorage.getItem('selectedSchoolId') : null;
+          if (schoolId) {
+            console.warn('Invalid schoolId in localStorage, clearing:', schoolId);
+            localStorage.removeItem('selectedSchoolId');
+            // Retry without schoolId
+            const retryBody = { ...settings };
+            const retryResponse = await fetch('/api/admin/settings', {
+              method: 'PATCH',
+              headers: { 
+                'Content-Type': 'application/json',
+                ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+              },
+              body: JSON.stringify(retryBody),
+            });
+            
+            if (retryResponse.ok) {
+              setSuccess(true);
+              setTimeout(() => setSuccess(false), 3000);
+              return;
+            }
+          }
+        }
+        
+        throw new Error(errorData.error || `Failed to save settings (${response.status})`);
       }
 
       setSuccess(true);

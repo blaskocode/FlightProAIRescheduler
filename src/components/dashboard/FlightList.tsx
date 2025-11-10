@@ -9,6 +9,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { RescheduleModal } from '@/components/flights/RescheduleModal';
 import { WeatherOverrideModal } from '@/components/flights/WeatherOverrideModal';
@@ -163,30 +164,82 @@ export function FlightList({ onFlightBooked }: FlightListProps = {}) {
   const handleViewRescheduleOptions = useCallback(async (flightId: string) => {
     if (!user) return;
     
+    console.log(`[handleViewRescheduleOptions] Starting for flight ${flightId}`);
+    
     try {
       const token = await user.getIdToken();
-      const response = await fetch(`/api/reschedule?flightId=${flightId}&status=PENDING_STUDENT`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      if (response.ok) {
-        const requests = await response.json();
+      // Check for both PENDING_STUDENT and PENDING_INSTRUCTOR statuses
+      const [response1, response2] = await Promise.all([
+        fetch(`/api/reschedule?flightId=${flightId}&status=PENDING_STUDENT`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        }),
+        fetch(`/api/reschedule?flightId=${flightId}&status=PENDING_INSTRUCTOR`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        }),
+      ]);
+      
+      let request = null;
+      if (response1.ok) {
+        const requests = await response1.json();
         if (requests.length > 0) {
-          const request = requests[0];
-          const suggestions = Array.isArray(request.suggestions)
-            ? request.suggestions
-            : JSON.parse(request.suggestions || '[]');
-          reschedule.setRescheduleRequestId(request.id);
-          reschedule.setRescheduleSuggestions(suggestions);
-          reschedule.setSelectedFlightId(flightId);
-          reschedule.setRescheduleModalOpen(true);
+          request = requests[0];
         }
+      }
+      if (!request && response2.ok) {
+        const requests = await response2.json();
+        if (requests.length > 0) {
+          request = requests[0];
+        }
+      }
+      
+      console.log(`[handleViewRescheduleOptions] Found request for ${flightId}:`, request ? { id: request.id, status: request.status } : 'none');
+      
+      // IMPORTANT: Always set selectedFlightId FIRST, then clear status, then check for request
+      reschedule.setSelectedFlightId(flightId);
+      
+      if (request) {
+        // If request is PENDING_INSTRUCTOR, check if user wants to create a new one
+        // For students, if they click "View Reschedule Options" on a flight with PENDING_INSTRUCTOR,
+        // they might want to create a NEW request (maybe the old one is stale or they want different options)
+        // So we'll show the existing request as read-only, but also allow them to create a new one
+        if (request.status === 'PENDING_INSTRUCTOR' && authUser?.role === 'student') {
+          console.log(`[handleViewRescheduleOptions] Found PENDING_INSTRUCTOR request for ${flightId}, but allowing new request creation`);
+          // Clear status and create a new request instead
+          reschedule.setRescheduleRequestStatusForFlight(flightId, undefined);
+          reschedule.setRescheduleSelectedOptionForFlight(flightId, null);
+          reschedule.handleRequestReschedule(flightId);
+          return;
+        }
+        
+        const suggestions = Array.isArray(request.suggestions)
+          ? request.suggestions
+          : JSON.parse(request.suggestions || '[]');
+        reschedule.setRescheduleRequestId(request.id);
+        reschedule.setRescheduleSuggestions(suggestions);
+        // Store request status and selected option per flight ID
+        reschedule.setRescheduleRequestStatusForFlight(flightId, request.status);
+        reschedule.setRescheduleSelectedOptionForFlight(flightId, request.selectedOption ?? null);
+        console.log(`[handleViewRescheduleOptions] Set status ${request.status} for ${flightId}`);
+        reschedule.setRescheduleModalOpen(true);
+      } else {
+        // No request found - this means we should allow creating a new request
+        // But if hasPending is true, it means the flight is in the pendingReschedules Set
+        // which might be from a different request or stale data
+        // Clear status and redirect to handleRequestReschedule
+        console.log(`[handleViewRescheduleOptions] No request found for ${flightId}, clearing status and calling handleRequestReschedule`);
+        reschedule.setRescheduleRequestStatusForFlight(flightId, undefined);
+        reschedule.setRescheduleSelectedOptionForFlight(flightId, null);
+        // Call handleRequestReschedule to create a new request
+        reschedule.handleRequestReschedule(flightId);
       }
     } catch (err) {
       console.error('Error fetching reschedule request:', err);
     }
-  }, [user, reschedule]);
+  }, [user, authUser, reschedule]);
 
   const handleOverrideWeather = useCallback((flightId: string) => {
     const flight = flights.find(f => f.id === flightId);
@@ -254,82 +307,116 @@ export function FlightList({ onFlightBooked }: FlightListProps = {}) {
         </div>
 
         {/* Filters */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-2 sm:gap-3 p-3 sm:p-4 bg-gray-50 rounded-lg">
-        <Select value={filters.statusFilter} onValueChange={filters.setStatusFilter}>
-          <SelectTrigger>
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Statuses</SelectItem>
-            {filters.uniqueStatuses.map((status) => (
-              <SelectItem key={status} value={status}>
-                {status}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="space-y-3 p-3 sm:p-4 bg-gray-50 rounded-lg">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="status-filter" className="text-sm font-medium text-gray-700">
+                Status
+              </Label>
+              <Select value={filters.statusFilter} onValueChange={filters.setStatusFilter}>
+                <SelectTrigger id="status-filter">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  {filters.uniqueStatuses.map((status) => (
+                    <SelectItem key={status} value={status}>
+                      {status}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-        <Select value={filters.aircraftFilter} onValueChange={filters.setAircraftFilter}>
-          <SelectTrigger>
-            <SelectValue placeholder="Aircraft" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Aircraft</SelectItem>
-            {filters.uniqueAircraft.map((tail) => (
-              <SelectItem key={tail} value={tail}>
-                {tail}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+            <div className="space-y-1.5">
+              <Label htmlFor="aircraft-filter" className="text-sm font-medium text-gray-700">
+                Aircraft
+              </Label>
+              <Select value={filters.aircraftFilter} onValueChange={filters.setAircraftFilter}>
+                <SelectTrigger id="aircraft-filter">
+                  <SelectValue placeholder="Aircraft" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Aircraft</SelectItem>
+                  {filters.uniqueAircraft.map((tail) => (
+                    <SelectItem key={tail} value={tail}>
+                      {tail}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-        {(authUser?.role === 'admin' || authUser?.role === 'super_admin') && (
-          <Select value={filters.instructorFilter} onValueChange={filters.setInstructorFilter}>
-            <SelectTrigger>
-              <SelectValue placeholder="Instructor" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Instructors</SelectItem>
-              {filters.uniqueInstructors.map((instructor) => (
-                <SelectItem key={instructor} value={instructor}>
-                  {instructor}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
+            {(authUser?.role === 'admin' || authUser?.role === 'super_admin') && (
+              <div className="space-y-1.5">
+                <Label htmlFor="instructor-filter" className="text-sm font-medium text-gray-700">
+                  Instructor
+                </Label>
+                <Select value={filters.instructorFilter} onValueChange={filters.setInstructorFilter}>
+                  <SelectTrigger id="instructor-filter">
+                    <SelectValue placeholder="Instructor" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Instructors</SelectItem>
+                    {filters.uniqueInstructors.map((instructor) => (
+                      <SelectItem key={instructor} value={instructor}>
+                        {instructor}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
-        <Select value={filters.dateRange} onValueChange={(v: any) => filters.setDateRange(v)}>
-          <SelectTrigger>
-            <SelectValue placeholder="Date Range" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Dates</SelectItem>
-            <SelectItem value="today">Today</SelectItem>
-            <SelectItem value="week">Next 7 Days</SelectItem>
-            <SelectItem value="month">Next 30 Days</SelectItem>
-          </SelectContent>
-        </Select>
+            <div className="space-y-1.5">
+              <Label htmlFor="date-range-filter" className="text-sm font-medium text-gray-700">
+                Date Range
+              </Label>
+              <Select value={filters.dateRange} onValueChange={(v: any) => filters.setDateRange(v)}>
+                <SelectTrigger id="date-range-filter">
+                  <SelectValue placeholder="Date Range" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Dates</SelectItem>
+                  <SelectItem value="today">Today</SelectItem>
+                  <SelectItem value="week">Next 7 Days</SelectItem>
+                  <SelectItem value="month">Next 30 Days</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-        <Select value={filters.sortBy} onValueChange={(v: any) => filters.setSortBy(v)}>
-          <SelectTrigger>
-            <SelectValue placeholder="Sort By" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="date">Date</SelectItem>
-            <SelectItem value="status">Status</SelectItem>
-            <SelectItem value="aircraft">Aircraft</SelectItem>
-          </SelectContent>
-        </Select>
+            <div className="space-y-1.5">
+              <Label htmlFor="sort-by-filter" className="text-sm font-medium text-gray-700">
+                Sort By
+              </Label>
+              <Select value={filters.sortBy} onValueChange={(v: any) => filters.setSortBy(v)}>
+                <SelectTrigger id="sort-by-filter">
+                  <SelectValue placeholder="Sort By" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="date">Date</SelectItem>
+                  <SelectItem value="status">Status</SelectItem>
+                  <SelectItem value="aircraft">Aircraft</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-        <Button
-          onClick={() => filters.setSortOrder(filters.sortOrder === 'asc' ? 'desc' : 'asc')}
-          variant="outline"
-          size="sm"
-        >
-          {filters.sortOrder === 'asc' ? '↑' : '↓'} {filters.sortOrder.toUpperCase()}
-        </Button>
-      </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="sort-order-button" className="text-sm font-medium text-gray-700">
+                Order
+              </Label>
+              <Button
+                id="sort-order-button"
+                onClick={() => filters.setSortOrder(filters.sortOrder === 'asc' ? 'desc' : 'asc')}
+                variant="outline"
+                size="sm"
+                className="w-full"
+              >
+                {filters.sortOrder === 'asc' ? '↑' : '↓'} {filters.sortOrder.toUpperCase()}
+              </Button>
+            </div>
+          </div>
+        </div>
 
       {/* Results */}
       {loading ? (
@@ -373,12 +460,16 @@ export function FlightList({ onFlightBooked }: FlightListProps = {}) {
       )}
       
       {/* Reschedule Modal */}
+      {/* Key prop forces remount when flightId changes, ensuring clean state */}
       {reschedule.rescheduleModalOpen && reschedule.selectedFlightId && (
         <RescheduleModal
+          key={reschedule.selectedFlightId}
           flightId={reschedule.selectedFlightId}
           rescheduleRequestId={reschedule.rescheduleRequestId || undefined}
           suggestions={reschedule.rescheduleSuggestions}
           isSearching={reschedule.requestingReschedule}
+          requestStatus={reschedule.rescheduleRequestStatus}
+          selectedOption={reschedule.rescheduleSelectedOption}
           onAccept={reschedule.handleAcceptReschedule}
           onReject={reschedule.handleRejectReschedule}
           onClose={reschedule.handleRejectReschedule}

@@ -59,7 +59,12 @@ export function useFlightListFilters({ flights }: UseFlightListFiltersProps) {
 
       // Date range filter
       const now = new Date();
-      if (dateRange === 'today') {
+      
+      // By default ('all'), only show upcoming flights (not past flights)
+      // This is appropriate for the "Upcoming Flights" section
+      if (dateRange === 'all') {
+        filtered = filtered.filter((f) => new Date(f.scheduledStart) >= now);
+      } else if (dateRange === 'today') {
         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         const tomorrow = new Date(today);
         tomorrow.setDate(tomorrow.getDate() + 1);

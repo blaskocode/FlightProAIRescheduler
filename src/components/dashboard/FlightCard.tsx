@@ -78,13 +78,32 @@ export function FlightCard({
     // Show reschedule options for students
     if (authUser?.role === 'student') {
       const hasAlert = weatherAlerts.has(flight.id);
-      const hasPending = pendingReschedules.has(flight.id);
       
-      // Show "View Reschedule Options" for cancelled flights with pending reschedule requests
-      if ((flight.status === 'MAINTENANCE_CANCELLED' || flight.status === 'WEATHER_CANCELLED') && hasPending && pendingReschedulesLoaded) {
+      // If flight status is RESCHEDULE_PENDING, show "View Reschedule Status"
+      if (flight.status === 'RESCHEDULE_PENDING') {
         return (
           <Button
-            onClick={() => onViewRescheduleOptions(flight.id)}
+            onClick={() => {
+              console.log(`[FlightCard] Clicked "View Reschedule Status" for flight ${flight.id} (RESCHEDULE_PENDING)`);
+              onViewRescheduleOptions(flight.id);
+            }}
+            size="sm"
+            variant="default"
+            className="text-xs bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto"
+          >
+            View Reschedule Status
+          </Button>
+        );
+      }
+      
+      // For cancelled flights, show "View Reschedule Options"
+      if (['WEATHER_CANCELLED', 'MAINTENANCE_CANCELLED', 'STUDENT_CANCELLED', 'INSTRUCTOR_CANCELLED'].includes(flight.status)) {
+        return (
+          <Button
+            onClick={() => {
+              console.log(`[FlightCard] Clicked "View Reschedule Options" for cancelled flight ${flight.id}`);
+              onViewRescheduleOptions(flight.id);
+            }}
             size="sm"
             variant="default"
             className="text-xs bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto"
@@ -94,21 +113,27 @@ export function FlightCard({
         );
       }
       
-      // Show "Request Reschedule" button for flights with weather alerts
-      const shouldShow = pendingReschedulesLoaded && hasAlert && !hasPending;
-      return shouldShow ? (
-        <Button
-          onClick={() => onRequestReschedule(flight.id)}
-          disabled={requestingReschedule}
-          size="sm"
-          variant="destructive"
-          className="text-xs w-full sm:w-auto"
-        >
-          {requestingReschedule && selectedFlightId === flight.id
-            ? 'Requesting...'
-            : 'Request Reschedule'}
-        </Button>
-      ) : null;
+      // For confirmed flights with weather alerts, show "Request Reschedule"
+      if (hasAlert && pendingReschedulesLoaded) {
+        return (
+          <Button
+            onClick={() => {
+              console.log(`[FlightCard] Clicked "Request Reschedule" for flight ${flight.id}`);
+              onRequestReschedule(flight.id);
+            }}
+            disabled={requestingReschedule}
+            size="sm"
+            variant="destructive"
+            className="text-xs w-full sm:w-auto"
+          >
+            {requestingReschedule && selectedFlightId === flight.id
+              ? 'Requesting...'
+              : 'Request Reschedule'}
+          </Button>
+        );
+      }
+      
+      return null;
     }
     
     // Show "Confirm Reschedule" button for instructors
@@ -221,6 +246,11 @@ export function FlightCard({
               {(flight.rescheduledFromId || flight.status === 'RESCHEDULE_CONFIRMED') && (
                 <span className="text-xs text-sky-600 font-medium flex items-center gap-1 self-start">
                   <span>🔄</span> Rescheduled
+                </span>
+              )}
+              {weatherAlerts.has(flight.id) && (
+                <span className="text-xs text-red-600 font-semibold flex items-center gap-1 self-start">
+                  <span>🌩️</span> Weather Alert
                 </span>
               )}
             </div>

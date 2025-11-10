@@ -27,16 +27,37 @@ export function useFlightListReschedule({
   const [selectedFlightId, setSelectedFlightId] = useState<string | null>(null);
   const [rescheduleRequestId, setRescheduleRequestId] = useState<string | null>(null);
   const [rescheduleSuggestions, setRescheduleSuggestions] = useState<any[]>([]);
+  const [rescheduleRequestStatuses, setRescheduleRequestStatuses] = useState<Map<string, 'PENDING_STUDENT' | 'PENDING_INSTRUCTOR' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED'>>(new Map());
+  const [rescheduleSelectedOptions, setRescheduleSelectedOptions] = useState<Map<string, number | null>>(new Map());
   const [requestingReschedule, setRequestingReschedule] = useState(false);
   const [confirmingReschedule, setConfirmingReschedule] = useState(false);
 
   const handleRequestReschedule = useCallback(async (flightId: string) => {
     if (!user) return;
     
+    console.log(`[handleRequestReschedule] Starting for flight ${flightId}`);
+    
+    // CRITICAL: Set selectedFlightId FIRST, then clear status BEFORE opening modal
     setSelectedFlightId(flightId);
-    setRescheduleModalOpen(true);
+    
+    // Explicitly clear status for this flight - ensures it's not read-only
+    setRescheduleRequestStatuses(prev => {
+      const newMap = new Map(prev);
+      const hadStatus = newMap.has(flightId);
+      newMap.delete(flightId);
+      console.log(`[handleRequestReschedule] Cleared status for ${flightId}, hadStatus=${hadStatus}, newMap size=${newMap.size}`);
+      return newMap;
+    });
+    setRescheduleSelectedOptions(prev => {
+      const newMap = new Map(prev);
+      newMap.delete(flightId);
+      return newMap;
+    });
+    setRescheduleRequestId(null);
     setRescheduleSuggestions([]);
     setRequestingReschedule(true);
+    // Open modal AFTER clearing status
+    setRescheduleModalOpen(true);
     
     try {
       const token = await user.getIdToken();
@@ -68,6 +89,9 @@ export function useFlightListReschedule({
           ? existingRequest.suggestions
           : JSON.parse(existingRequest.suggestions || '[]');
         setRescheduleSuggestions(suggestions);
+        // Store status and selected option per flight ID (only if request exists)
+        setRescheduleRequestStatuses(prev => new Map(prev).set(flightId, existingRequest.status));
+        setRescheduleSelectedOptions(prev => new Map(prev).set(flightId, existingRequest.selectedOption ?? null));
         setRescheduleModalOpen(true);
         setRequestingReschedule(false);
         return;
@@ -286,8 +310,7 @@ export function useFlightListReschedule({
   }, [user, authUser, pendingRescheduleRequests, fetchFlights]);
 
   // Fetch weather alerts and pending reschedule requests
-  useEffect(() => {
-    async function fetchAlertsAndReschedules() {
+  const fetchAlertsAndReschedules = useCallback(async () => {
       if (!user || !authUser || authLoading) {
         setPendingReschedulesLoaded(false);
         return;
@@ -301,6 +324,8 @@ export function useFlightListReschedule({
         if (alertsResponse.ok) {
           const alerts = await alertsResponse.json();
           const flightIdsWithAlerts = new Set(alerts.map((alert: any) => alert.flightId));
+          console.log('[useFlightListReschedule] Weather alerts fetched:', alerts.length);
+          console.log('[useFlightListReschedule] Flight IDs with alerts:', Array.from(flightIdsWithAlerts));
           setWeatherAlerts(flightIdsWithAlerts);
         }
         
@@ -326,6 +351,21 @@ export function useFlightListReschedule({
           allPendingReschedules.map((req: any) => req.flightId)
         );
         setPendingReschedules(flightIdsWithPendingReschedules);
+        
+        console.log(`[useFlightListReschedule] Fetched ${allPendingReschedules.length} pending reschedule requests`);
+        
+        // Store request statuses and selected options per flight ID
+        const statusesMap = new Map<string, 'PENDING_STUDENT' | 'PENDING_INSTRUCTOR' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED'>();
+        const selectedOptionsMap = new Map<string, number | null>();
+        
+        for (const req of allPendingReschedules) {
+          statusesMap.set(req.flightId, req.status);
+          selectedOptionsMap.set(req.flightId, req.selectedOption ?? null);
+        }
+        
+        setRescheduleRequestStatuses(statusesMap);
+        setRescheduleSelectedOptions(selectedOptionsMap);
+        console.log(`[useFlightListReschedule] Populated statuses:`, Array.from(statusesMap.entries()).map(([id, status]) => ({ flightId: id, status })));
         
         // Store reschedule details
         const detailsMap = new Map<string, any>();
@@ -378,27 +418,73 @@ export function useFlightListReschedule({
         
         setRescheduleDetails(detailsMap);
         
-        // Store pending reschedule requests for instructor confirmation
-        if (authUser.role === 'instructor') {
-          const instructorRequests = allPendingReschedules.filter(
-            (req: any) => req.status === 'PENDING_INSTRUCTOR'
-          );
-          const requestsMap = new Map<string, any>();
-          instructorRequests.forEach((req: any) => {
-            requestsMap.set(req.flightId, req);
-          });
-          setPendingRescheduleRequests(requestsMap);
-        }
+        // Store ALL pending reschedule requests (for both students and instructors)
+        const requestsMap = new Map<string, any>();
+        allPendingReschedules.forEach((req: any) => {
+          requestsMap.set(req.flightId, req);
+        });
+        setPendingRescheduleRequests(requestsMap);
+        console.log(`[useFlightListReschedule] Populated pendingRescheduleRequests:`, Array.from(requestsMap.entries()).map(([id, req]) => ({ flightId: id, requestId: req.id, status: req.status })));
         
         setPendingReschedulesLoaded(true);
       } catch (error) {
         console.error('Error fetching alerts and reschedules:', error);
         setPendingReschedulesLoaded(true);
       }
-    }
-    
-    fetchAlertsAndReschedules();
   }, [user, authUser, authLoading]);
+  
+  // Initial fetch and polling for instructors
+  useEffect(() => {
+    fetchAlertsAndReschedules();
+    
+    // For instructors, poll every 10 seconds to check for new reschedule requests
+    // This ensures they see new requests quickly without manual refresh
+    if (authUser?.role === 'instructor') {
+      console.log('[useFlightListReschedule] Starting polling for instructor (every 10s)');
+      const intervalId = setInterval(() => {
+        console.log('[useFlightListReschedule] Polling for new reschedule requests');
+        fetchAlertsAndReschedules();
+      }, 10000); // Poll every 10 seconds
+      
+      return () => {
+        console.log('[useFlightListReschedule] Stopping polling for instructor');
+        clearInterval(intervalId);
+      };
+    }
+  }, [fetchAlertsAndReschedules, authUser?.role]);
+
+  // Get status and selected option for the currently selected flight
+  // If no entry exists in the Map, explicitly return undefined (not read-only)
+  const rescheduleRequestStatus = selectedFlightId && rescheduleRequestStatuses.has(selectedFlightId) 
+    ? rescheduleRequestStatuses.get(selectedFlightId) 
+    : undefined;
+  const rescheduleSelectedOption = selectedFlightId && rescheduleSelectedOptions.has(selectedFlightId)
+    ? rescheduleSelectedOptions.get(selectedFlightId) ?? null
+    : null;
+  
+  // Debug logging
+  useEffect(() => {
+    if (selectedFlightId) {
+      console.log(`[useFlightListReschedule] Flight ${selectedFlightId}: status=${rescheduleRequestStatus}, hasStatus=${rescheduleRequestStatuses.has(selectedFlightId)}, allStatuses=`, Array.from(rescheduleRequestStatuses.entries()));
+    }
+  }, [selectedFlightId, rescheduleRequestStatus, rescheduleRequestStatuses]);
+
+  // Expose setters for storing status per flight
+  const setRescheduleRequestStatusForFlight = useCallback((flightId: string, status: 'PENDING_STUDENT' | 'PENDING_INSTRUCTOR' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED' | undefined) => {
+    if (status) {
+      setRescheduleRequestStatuses(prev => new Map(prev).set(flightId, status));
+    } else {
+      setRescheduleRequestStatuses(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(flightId);
+        return newMap;
+      });
+    }
+  }, []);
+
+  const setRescheduleSelectedOptionForFlight = useCallback((flightId: string, option: number | null) => {
+    setRescheduleSelectedOptions(prev => new Map(prev).set(flightId, option));
+  }, []);
 
   return {
     weatherAlerts,
@@ -410,12 +496,16 @@ export function useFlightListReschedule({
     selectedFlightId,
     rescheduleRequestId,
     rescheduleSuggestions,
+    rescheduleRequestStatus,
+    rescheduleSelectedOption,
     requestingReschedule,
     confirmingReschedule,
     setRescheduleModalOpen,
     setSelectedFlightId,
     setRescheduleRequestId,
     setRescheduleSuggestions,
+    setRescheduleRequestStatusForFlight,
+    setRescheduleSelectedOptionForFlight,
     handleRequestReschedule,
     handleAcceptReschedule,
     handleRejectReschedule,

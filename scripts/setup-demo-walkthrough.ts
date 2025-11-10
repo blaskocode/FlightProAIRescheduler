@@ -313,14 +313,30 @@ async function setupDemoWalkthrough() {
       console.log(`      Reason: ${reasons[0]}`);
     }
 
-    // Step 7: Summary
+    // Step 7: Set up Instructor Demo Flight (with pending reschedule)
+    console.log('\n7️⃣ Setting up Instructor Demo Flight...');
+    try {
+      // Run the instructor demo flight setup
+      const { execSync } = require('child_process');
+      execSync('npx tsx scripts/setup-instructor-demo-flight.ts', { 
+        stdio: 'inherit',
+        cwd: process.cwd()
+      });
+      console.log('   ✅ Instructor demo flight configured');
+    } catch (error) {
+      console.log('   ⚠️  Instructor demo flight setup skipped (run manually if needed)');
+      console.log('   💡 Run: npx tsx scripts/setup-instructor-demo-flight.ts');
+    }
+
+    // Step 8: Summary
     console.log('\n' + '='.repeat(60));
     console.log('\n✅ DEMO SETUP COMPLETE!\n');
     console.log('📋 Setup Summary:');
     console.log(`   - School: ${school.name} (${school.airportCode})`);
     console.log(`   - Aircraft: ${aircraft.tailNumber}`);
-    console.log(`   - Flights Created: ${flights.length}`);
-    console.log(`   - Weather Alerts: Created for all flights\n`);
+    console.log(`   - Student Flights Created: ${flights.length}`);
+    console.log(`   - Weather Alerts: Created for all flights`);
+    console.log(`   - Instructor Demo Flight: Configured with pending reschedule\n`);
     
     console.log('🎬 Ready for Demo Walkthrough!\n');
     console.log('Next Steps:');
@@ -329,7 +345,8 @@ async function setupDemoWalkthrough() {
     console.log('3. Login as demo.student@flightpro.com');
     console.log('4. Request reschedule for weather-affected flight');
     console.log('5. Login as demo.instructor@flightpro.com');
-    console.log('6. Confirm the reschedule\n');
+    console.log('6. View weather alert and pending reschedule request');
+    console.log('7. Confirm the reschedule\n');
 
   } catch (error: any) {
     console.error('\n❌ Error setting up demo:', error);

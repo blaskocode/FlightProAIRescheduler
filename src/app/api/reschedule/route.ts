@@ -48,26 +48,23 @@ export async function GET(request: NextRequest) {
       // Students only see their own reschedule requests
       requests = requests.filter(req => req.studentId === authUser.studentId);
     } else if (authUser.role === 'instructor') {
-      // Instructors only see reschedule requests for flights where they are the instructor
-      // OR where they are the instructor in the selected reschedule option
+      // Instructors only see reschedule requests where they are the SELECTED instructor
+      // (Once a student selects an option, only the NEW instructor should see it)
       requests = requests.filter(req => {
-        // Check if instructor matches original flight instructor
-        if (req.flight.instructorId === authUser.instructorId) {
-          return true;
-        }
-        
-        // Check if instructor matches selected reschedule option instructor
-        if (req.selectedOption !== null && req.selectedOption !== undefined) {
-          const suggestions = Array.isArray(req.suggestions)
-            ? req.suggestions
-            : JSON.parse((req.suggestions as any) || '[]');
-          const selectedOption = suggestions[req.selectedOption];
-          if (selectedOption?.instructorId === authUser.instructorId) {
-            return true;
+        // For PENDING_INSTRUCTOR status, only show to the NEW instructor (from selected option)
+        if (req.status === 'PENDING_INSTRUCTOR') {
+          if (req.selectedOption !== null && req.selectedOption !== undefined) {
+            const suggestions = Array.isArray(req.suggestions)
+              ? req.suggestions
+              : JSON.parse((req.suggestions as any) || '[]');
+            const selectedOption = suggestions[req.selectedOption];
+            return selectedOption?.instructorId === authUser.instructorId;
           }
+          return false;
         }
         
-        return false;
+        // For other statuses (PENDING_STUDENT, ACCEPTED, etc), show to original instructor
+        return req.flight.instructorId === authUser.instructorId;
       });
     }
     // Admins can see all requests (no filtering)

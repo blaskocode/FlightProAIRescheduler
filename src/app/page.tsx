@@ -77,27 +77,39 @@ export default function Home() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-              <div className="p-4 card-sky hover:shadow-lg transition-shadow">
+              <Link 
+                href="/login?email=demo.student@flightpro.com&password=DemoPass123!"
+                className="p-4 card-sky hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-sky-300 rounded-lg"
+              >
                 <div className="font-bold text-sky-600 mb-2 flex items-center gap-2">
                   <span>👨‍🎓</span> Student
                 </div>
-                <div className="text-xs text-sky-700 break-all font-mono">student.demo@flightpro.com</div>
+                <div className="text-xs text-sky-700 break-all font-mono">demo.student@flightpro.com</div>
                 <div className="text-xs text-sky-500 mt-2 font-medium">DemoPass123!</div>
-              </div>
-              <div className="p-4 card-sky hover:shadow-lg transition-shadow">
+                <div className="text-xs text-sky-600 mt-2 font-semibold">Click to login →</div>
+              </Link>
+              <Link 
+                href="/login?email=demo.instructor@flightpro.com&password=DemoPass123!"
+                className="p-4 card-sky hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-aviation-green-300 rounded-lg"
+              >
                 <div className="font-bold text-aviation-green-600 mb-2 flex items-center gap-2">
                   <span>👨‍✈️</span> Instructor
                 </div>
-                <div className="text-xs text-sky-700 break-all font-mono">instructor.demo@flightpro.com</div>
+                <div className="text-xs text-sky-700 break-all font-mono">demo.instructor@flightpro.com</div>
                 <div className="text-xs text-sky-500 mt-2 font-medium">DemoPass123!</div>
-              </div>
-              <div className="p-4 card-sky hover:shadow-lg transition-shadow">
+                <div className="text-xs text-aviation-green-600 mt-2 font-semibold">Click to login →</div>
+              </Link>
+              <Link 
+                href="/login?email=demo.admin@flightpro.com&password=DemoPass123!"
+                className="p-4 card-sky hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-sky-400 rounded-lg"
+              >
                 <div className="font-bold text-sky-700 mb-2 flex items-center gap-2">
                   <span>👔</span> Admin
                 </div>
-                <div className="text-xs text-sky-700 break-all font-mono">admin.demo@flightpro.com</div>
+                <div className="text-xs text-sky-700 break-all font-mono">demo.admin@flightpro.com</div>
                 <div className="text-xs text-sky-500 mt-2 font-medium">DemoPass123!</div>
-              </div>
+                <div className="text-xs text-sky-700 mt-2 font-semibold">Click to login →</div>
+              </Link>
             </div>
             <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
               <p className="text-xs text-amber-800">

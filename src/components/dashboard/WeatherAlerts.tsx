@@ -8,9 +8,11 @@ interface WeatherAlert {
   result: string;
   confidence: number;
   reasons: string[];
+  location: string;
   flight: {
     scheduledStart: string;
     lessonTitle: string | null;
+    departureAirport: string;
   };
 }
 
@@ -24,7 +26,11 @@ export function WeatherAlerts() {
         const response = await fetch('/api/weather/alerts');
         if (response.ok) {
           const data = await response.json();
-          setAlerts(data);
+          // Sort alerts by flight date (earliest first)
+          const sortedAlerts = data.sort((a: WeatherAlert, b: WeatherAlert) => {
+            return new Date(a.flight.scheduledStart).getTime() - new Date(b.flight.scheduledStart).getTime();
+          });
+          setAlerts(sortedAlerts);
         } else {
           console.error('Failed to fetch weather alerts');
         }
@@ -85,8 +91,17 @@ export function WeatherAlerts() {
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-lg">{alert.result === 'UNSAFE' ? '⚠️' : '🌦️'}</span>
                   <p className="font-semibold text-sm text-sky-900">
-                    {new Date(alert.flight.scheduledStart).toLocaleDateString()}
+                    {new Date(alert.flight.scheduledStart).toLocaleString('en-US', { 
+                      month: 'short', 
+                      day: 'numeric', 
+                      hour: 'numeric', 
+                      minute: '2-digit',
+                      hour12: true 
+                    })}
                   </p>
+                  <span className="text-xs font-medium text-sky-600 bg-sky-100 px-2 py-1 rounded">
+                    {alert.flight.departureAirport}
+                  </span>
                 </div>
                 <p className="text-xs text-sky-700 font-medium mb-2">
                   {alert.flight.lessonTitle || 'Flight Lesson'}

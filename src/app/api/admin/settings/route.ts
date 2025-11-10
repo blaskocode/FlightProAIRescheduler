@@ -125,20 +125,37 @@ export async function PATCH(request: NextRequest) {
     let schoolId: string | null = null;
     
     if (schoolIdParam) {
-      // Super admin can specify schoolId
-      schoolId = schoolIdParam;
-    } else {
-      // Get user's school
+      // Validate that the schoolId exists before using it
+      const schoolExists = await prisma.school.findUnique({
+        where: { id: schoolIdParam },
+        select: { id: true },
+      });
+      
+      if (schoolExists) {
+        schoolId = schoolIdParam;
+        console.log('Using schoolId from body param:', schoolId);
+      } else {
+        console.warn('Invalid schoolId from body param, ignoring:', schoolIdParam);
+        // Fall through to get user's school
+      }
+    }
+    
+    // If no valid schoolId from param, get user's school
+    if (!schoolId) {
+      console.log('Getting user schoolId...');
       schoolId = await getUserSchoolId(authUser);
+      console.log('User schoolId:', schoolId);
     }
     
     // If no schoolId, default to first school (for super admins)
     if (!schoolId) {
+      console.log('No schoolId found, defaulting to first school...');
       const firstSchool = await prisma.school.findFirst({
         orderBy: { name: 'asc' },
         select: { id: true },
       });
       schoolId = firstSchool?.id || null;
+      console.log('First school ID:', schoolId);
     }
     
     if (!schoolId) {
@@ -171,9 +188,19 @@ export async function PATCH(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error updating settings:', error);
+    console.error('Error stack:', error.stack);
+    
+    // Handle authentication errors
+    if (error.message?.includes('Authentication') || error.message?.includes('not found')) {
+      return NextResponse.json(
+        { error: error.message || 'Authentication required' },
+        { status: 401 }
+      );
+    }
+    
     return NextResponse.json(
       { error: error.message || 'Internal server error' },
-      { status: error.message?.includes('Authentication') ? 401 : 500 }
+      { status: 500 }
     );
   }
 }
