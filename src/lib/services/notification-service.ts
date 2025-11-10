@@ -55,7 +55,18 @@ function shouldSendNotification(
   return legacyEnabled;
 }
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+/**
+ * Get Resend client instance (lazy initialization)
+ * Only initializes when actually needed, preventing build-time errors
+ */
+function getResendClient(): Resend | null {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.warn('RESEND_API_KEY not configured. Email notifications will be disabled.');
+    return null;
+  }
+  return new Resend(apiKey);
+}
 
 export interface NotificationData {
   recipientId: string;
@@ -108,26 +119,31 @@ export async function sendNotification(data: NotificationData) {
     // Send email if enabled
     if (shouldSendEmail) {
       try {
-        await resend.emails.send({
-          from: process.env.RESEND_FROM_EMAIL || 'noreply@flightpro.com',
-          to: student.email,
-          subject: data.subject,
-          html: data.message,
-        });
-        
-        // Save email notification
-        await prisma.notification.create({
-          data: {
-            recipientId: data.recipientId,
-            type: data.type,
-            channel: 'EMAIL',
+        const resend = getResendClient();
+        if (!resend) {
+          console.warn('Resend client not available. Skipping email notification.');
+        } else {
+          await resend.emails.send({
+            from: process.env.RESEND_FROM_EMAIL || 'noreply@flightpro.com',
+            to: student.email,
             subject: data.subject,
-            message: data.message,
-            flightId: data.flightId,
-            metadata: data.metadata,
-            sentAt: new Date(),
-          },
-        });
+            html: data.message,
+          });
+          
+          // Save email notification
+          await prisma.notification.create({
+            data: {
+              recipientId: data.recipientId,
+              type: data.type,
+              channel: 'EMAIL',
+              subject: data.subject,
+              message: data.message,
+              flightId: data.flightId,
+              metadata: data.metadata,
+              sentAt: new Date(),
+            },
+          });
+        }
       } catch (error) {
         console.error('Error sending email:', error);
       }
