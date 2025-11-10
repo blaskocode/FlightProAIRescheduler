@@ -187,7 +187,7 @@ export async function createBooking(
         departureAirport: data.departureAirport,
         destinationAirport: data.destinationAirport,
         route: data.route,
-        status: 'PENDING',
+        status: 'CONFIRMED', // New bookings are automatically confirmed
       },
       include: {
         student: true,

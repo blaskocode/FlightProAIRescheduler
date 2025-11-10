@@ -94,6 +94,7 @@ export async function GET(request: NextRequest) {
       where,
       select: {
         id: true,
+        schoolId: true,
         firstName: true,
         lastName: true,
         email: true,

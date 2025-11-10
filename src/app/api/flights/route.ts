@@ -138,7 +138,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const authUser = await requireAuth();
+    const authUser = await requireAuth(request);
 
     // Check if user can create flights
     if (!(await hasPermission(authUser, 'flights.create'))) {

@@ -112,6 +112,11 @@ export function BookFlightModal({ isOpen, onClose, onSuccess }: BookFlightModalP
       return;
     }
 
+    if (!authUser.schoolId) {
+      setError('Your account is not assigned to a school. Please contact support.');
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -127,24 +132,6 @@ export function BookFlightModal({ isOpen, onClose, onSuccess }: BookFlightModalP
       const scheduledEnd = new Date(scheduledDate);
       scheduledEnd.setHours(scheduledEnd.getHours() + durationHours);
 
-      // Get student's schoolId
-      const studentResponse = await fetch('/api/students', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      
-      if (!studentResponse.ok) {
-        throw new Error('Failed to fetch student information');
-      }
-      
-      const students = await studentResponse.json();
-      const currentStudent = students.find((s: any) => s.id === authUser.studentId);
-      
-      if (!currentStudent || !currentStudent.schoolId) {
-        throw new Error('Student school not found');
-      }
-
       const response = await fetch('/api/flights', {
         method: 'POST',
         headers: {
@@ -152,7 +139,7 @@ export function BookFlightModal({ isOpen, onClose, onSuccess }: BookFlightModalP
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          schoolId: currentStudent.schoolId,
+          schoolId: authUser.schoolId,
           studentId: authUser.studentId,
           instructorId: formData.instructorId || undefined,
           aircraftId: formData.aircraftId,
