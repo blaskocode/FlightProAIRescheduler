@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
   try {
     const authUser = await requireAuth(request);
     
-    if (authUser.role !== 'admin' && authUser.role !== 'super_admin') {
+    if (authUser.role !== 'admin') {
       return NextResponse.json(
         { error: 'Admin access required' },
         { status: 403 }

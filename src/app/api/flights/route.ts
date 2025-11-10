@@ -50,10 +50,11 @@ export async function GET(request: NextRequest) {
       console.log('Instructor schoolId:', userSchoolId);
     }
 
-    // Filter by school if user has one (unless they're super admin)
-    if (userSchoolId && authUser.role !== 'super_admin') {
+    // Filter by school if user has one
+    if (userSchoolId) {
       where.schoolId = userSchoolId;
-    } else if (!userSchoolId) {
+    } else if (authUser.role !== 'admin') {
+      // Non-admin users should have a school
       console.warn('User has no schoolId - this may cause issues');
     }
 
@@ -65,12 +66,10 @@ export async function GET(request: NextRequest) {
       // Students always see only their own flights
       where.studentId = authUser.studentId;
     } else if (authUser.role === 'instructor' && authUser.instructorId) {
-      // Instructors always see only their own flights (unless they're an admin)
-      if (authUser.role !== 'admin' && authUser.role !== 'super_admin') {
-        where.instructorId = authUser.instructorId;
-      }
+      // Instructors always see only their own flights
+      where.instructorId = authUser.instructorId;
     }
-    // Admins and super_admins can see all flights (no filtering)
+    // Admins can see all flights (no filtering)
 
     // Allow query params to further filter (but don't override role-based filtering)
     // These are for admin use cases where they want to filter by specific student/instructor

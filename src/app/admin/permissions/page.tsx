@@ -1,5 +1,5 @@
 import { PermissionManagement } from '@/components/admin/PermissionManagement';
-import { AuditLogViewer } from '@/components/admin/AuditLogViewer';
+// import { AuditLogViewer } from '@/components/admin/AuditLogViewer';
 
 export default function PermissionsPage() {
   return (
@@ -12,7 +12,7 @@ export default function PermissionsPage() {
           </p>
         </div>
         <PermissionManagement />
-        <AuditLogViewer />
+        {/* <AuditLogViewer /> */}
       </div>
     </div>
   );

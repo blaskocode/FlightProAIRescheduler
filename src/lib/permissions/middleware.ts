@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
-import { hasPermission, Permission } from './check';
+import { hasPermission } from './check';
+import { Permission } from './types';
 
 /**
  * Middleware to require a specific permission

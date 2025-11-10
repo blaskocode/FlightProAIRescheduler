@@ -406,13 +406,21 @@ export async function generateWeatherInsights(
     const latest = recentPatterns[recentPatterns.length - 1];
     const previous = recentPatterns[recentPatterns.length - 2];
     
-    if (latest.avgSafeRate > previous.avgSafeRate) {
+    // Calculate safe rate as percentage
+    const latestSafeRate = latest.totalChecks > 0 
+      ? (latest.safeCount / latest.totalChecks) * 100 
+      : 0;
+    const previousSafeRate = previous.totalChecks > 0 
+      ? (previous.safeCount / previous.totalChecks) * 100 
+      : 0;
+    
+    if (latestSafeRate > previousSafeRate) {
       insights.push({
         type: 'WEATHER_IMPROVEMENT',
         title: 'Improving Weather Conditions',
         description: `Weather conditions have improved from ${previous.monthName} to ${latest.monthName}.`,
         recommendation: 'Current trend suggests favorable conditions for upcoming flights.',
-        confidence: Math.min(85, latest.avgSafeRate),
+        confidence: Math.min(85, latestSafeRate),
       });
     }
   }

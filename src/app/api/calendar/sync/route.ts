@@ -8,8 +8,9 @@ import { syncFlightToCalendar, refreshAccessToken } from '@/lib/services/google-
  * Sync flights to Google Calendar
  */
 export async function POST(request: NextRequest) {
+  let authUser;
   try {
-    const authUser = await requireAuth();
+    authUser = await requireAuth();
     const body = await request.json();
     const { flightId } = body;
 

@@ -86,7 +86,7 @@ export async function auditLog(
   await createAuditLog({
     action,
     userId: authUser.uid,
-    userRole: authUser.role,
+    userRole: authUser.role || 'unknown',
     resourceType,
     resourceId: options.resourceId,
     schoolId: options.schoolId,

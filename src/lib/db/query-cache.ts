@@ -1,5 +1,4 @@
 import { Redis } from 'ioredis';
-import { connection } from '@/lib/jobs/queues';
 
 /**
  * Query Cache Service
@@ -9,11 +8,8 @@ import { connection } from '@/lib/jobs/queues';
 let redisClient: Redis | null = null;
 
 function getRedisClient(): Redis | null {
-  if (!redisClient && connection) {
-    redisClient = new Redis({
-      host: connection.host,
-      port: connection.port,
-      password: connection.password,
+  if (!redisClient && process.env.REDIS_URL) {
+    redisClient = new Redis(process.env.REDIS_URL, {
       // Use a separate database for caching (default is 0, use 1 for cache)
       db: 1,
     });
@@ -24,7 +20,7 @@ function getRedisClient(): Redis | null {
 /**
  * Generate cache key from query parameters
  */
-function generateCacheKey(prefix: string, params: Record<string, any>): string {
+export function generateCacheKey(prefix: string, params: Record<string, any>): string {
   const sortedParams = Object.keys(params)
     .sort()
     .map(key => `${key}:${JSON.stringify(params[key])}`)

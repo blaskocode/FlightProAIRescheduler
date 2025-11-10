@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
       where: {
         OR: [
           {
-            nextInspectionDate: {
+            nextInspectionDue: {
               lte: thirtyDaysFromNow,
               gte: now
             }

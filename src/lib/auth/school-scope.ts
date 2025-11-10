@@ -51,9 +51,9 @@ export async function canAccessSchool(
   const userSchoolId = await getUserSchoolId(authUser);
   
   // Super admin (null) can access all schools
-  if (userSchoolId === null && authUser.role === 'admin') {
+  if (userSchoolId === null && authUser.role === 'admin' && authUser.adminId) {
     const admin = await prisma.admin.findUnique({
-      where: { id: authUser.id },
+      where: { id: authUser.adminId },
       select: { role: true },
     });
     if (admin?.role === 'super_admin') {
@@ -90,9 +90,9 @@ export async function getSchoolScopedWhere(
   const userSchoolId = await getUserSchoolId(authUser);
   
   // Super admin can access all (return undefined = no filter)
-  if (userSchoolId === null && authUser.role === 'admin') {
+  if (userSchoolId === null && authUser.role === 'admin' && authUser.adminId) {
     const admin = await prisma.admin.findUnique({
-      where: { id: authUser.id },
+      where: { id: authUser.adminId },
       select: { role: true },
     });
     if (admin?.role === 'super_admin') {

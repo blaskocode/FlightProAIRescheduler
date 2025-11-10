@@ -188,12 +188,14 @@ export function MapboxRouteMap({ waypoints, height = '400px' }: MapboxRouteMapPr
 
       const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(popupContent);
 
-      const marker = new mapboxgl.Marker(el)
-        .setLngLat([waypoint.longitude, waypoint.latitude])
-        .setPopup(popup)
-        .addTo(map.current);
+      if (map.current) {
+        const marker = new mapboxgl.Marker(el)
+          .setLngLat([waypoint.longitude, waypoint.latitude])
+          .setPopup(popup)
+          .addTo(map.current);
 
-      markers.current.push(marker);
+        markers.current.push(marker);
+      }
     });
 
     // Fit map to show entire route

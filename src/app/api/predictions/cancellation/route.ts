@@ -50,11 +50,10 @@ export async function POST(request: NextRequest) {
     if (flight.weatherChecks.length > 0) {
       const latestCheck = flight.weatherChecks[0];
       weatherForecast = {
-        visibility: latestCheck.visibility,
-        ceiling: latestCheck.ceiling,
-        windSpeed: latestCheck.windSpeed,
-        windGust: latestCheck.windGust,
-        precipitation: latestCheck.precipitation,
+        visibility: latestCheck.visibility ?? undefined,
+        ceiling: latestCheck.ceiling ?? undefined,
+        windSpeed: latestCheck.windSpeed ?? undefined,
+        windGust: latestCheck.windGust ?? undefined,
         conditions: latestCheck.reasons as string[],
       };
     }
@@ -145,11 +144,10 @@ export async function GET(request: NextRequest) {
         if (flight.weatherChecks.length > 0) {
           const latestCheck = flight.weatherChecks[0];
           weatherForecast = {
-            visibility: latestCheck.visibility,
-            ceiling: latestCheck.ceiling,
-            windSpeed: latestCheck.windSpeed,
-            windGust: latestCheck.windGust,
-            precipitation: latestCheck.precipitation,
+            visibility: latestCheck.visibility ?? undefined,
+            ceiling: latestCheck.ceiling ?? undefined,
+            windSpeed: latestCheck.windSpeed ?? undefined,
+            windGust: latestCheck.windGust ?? undefined,
             conditions: latestCheck.reasons as string[],
           };
         }

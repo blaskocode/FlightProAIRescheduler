@@ -40,8 +40,6 @@ export function getWeatherMinimums(
         maxCrosswind: 5,
         maxGust: 0,
         allowPrecipitation: false,
-        allowThunderstorms: false,
-        allowIcing: false,
       };
       break;
     case 'MID_STUDENT':
@@ -52,8 +50,6 @@ export function getWeatherMinimums(
         maxCrosswind: 8,
         maxGust: 5,
         allowPrecipitation: true,
-        allowThunderstorms: false,
-        allowIcing: false,
       };
       break;
     case 'ADVANCED_STUDENT':
@@ -64,8 +60,6 @@ export function getWeatherMinimums(
         maxCrosswind: 10,
         maxGust: 8,
         allowPrecipitation: true,
-        allowThunderstorms: false,
-        allowIcing: false,
       };
       break;
     case 'PRIVATE_PILOT':
@@ -76,8 +70,6 @@ export function getWeatherMinimums(
         maxCrosswind: 15,
         maxGust: 10,
         allowPrecipitation: true,
-        allowThunderstorms: false,
-        allowIcing: false,
       };
       break;
     case 'INSTRUMENT_RATED':
@@ -88,8 +80,6 @@ export function getWeatherMinimums(
         maxCrosswind: 20,
         maxGust: 15,
         allowPrecipitation: true,
-        allowThunderstorms: false, // Never allow thunderstorms
-        allowIcing: false, // Never allow icing conditions
       };
       break;
     default:
@@ -100,8 +90,6 @@ export function getWeatherMinimums(
         maxCrosswind: 10,
         maxGust: 8,
         allowPrecipitation: true,
-        allowThunderstorms: false,
-        allowIcing: false,
       };
   }
 
@@ -191,7 +179,8 @@ export function checkWeatherSafety(
     c === 'TS' || c.includes('TS')
   );
   
-  if (hasThunderstorm && !minimums.allowThunderstorms) {
+  // Thunderstorms are never allowed
+  if (hasThunderstorm) {
     reasons.push('Thunderstorms detected - unsafe for flight');
     unsafeCount++;
   }
@@ -199,8 +188,9 @@ export function checkWeatherSafety(
   // Check for icing conditions
   // Icing occurs when: temperature between -10°C and 0°C with visible moisture/precipitation
   // Or temperature < -10°C with visible moisture (supercooled water)
+  // Icing is never allowed
   const hasIcingConditions = checkIcingConditions(weather, minimums);
-  if (hasIcingConditions && !minimums.allowIcing) {
+  if (hasIcingConditions) {
     reasons.push('Icing conditions detected - unsafe for flight');
     unsafeCount++;
   }

@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
     const authUser = await requireAuth(request);
     
     // Check if user is admin
-    if (authUser.role !== 'admin' && authUser.role !== 'super_admin') {
+    if (authUser.role !== 'admin') {
       return NextResponse.json(
         { error: 'Admin access required' },
         { status: 403 }
@@ -26,36 +26,14 @@ export async function POST(request: NextRequest) {
         checkType: 'MANUAL',
       });
 
-      // Wait for job to complete (with 60 second timeout)
-      try {
-        await job.waitUntilFinished(60000);
-        const state = await job.getState();
-        
-        if (state === 'completed') {
-          return NextResponse.json({
-            jobId: job.id,
-            message: 'Weather check completed successfully',
-            success: 1,
-            failed: 0,
-          });
-        } else {
-          return NextResponse.json({
-            jobId: job.id,
-            message: 'Weather check failed',
-            success: 0,
-            failed: 1,
-          });
-        }
-      } catch (waitError: any) {
-        // Job may have failed or timed out
-        const state = await job.getState();
-        return NextResponse.json({
-          jobId: job.id,
-          message: state === 'failed' ? 'Weather check failed' : 'Weather check timed out',
-          success: state === 'completed' ? 1 : 0,
-          failed: state === 'failed' ? 1 : 0,
-        });
-      }
+      // Return job info immediately - client can poll for status if needed
+      return NextResponse.json({
+        jobId: job.id,
+        message: 'Weather check queued successfully',
+        flightId,
+        async: true,
+        note: 'Weather check is being processed. Check flight status for updates.',
+      });
     } else {
       // Refresh all upcoming flights - ASYNCHRONOUS MODE for scalability
       const now = new Date();

@@ -99,7 +99,7 @@ export function SquawkReportForm({
         <Label htmlFor="severity">Severity *</Label>
         <Select
           value={severity}
-          onValueChange={(value: 'MINOR' | 'MAJOR' | 'GROUNDING') => setSeverity(value)}
+          onValueChange={(value) => setSeverity(value as 'MINOR' | 'MAJOR' | 'GROUNDING')}
         >
           <SelectTrigger>
             <SelectValue />

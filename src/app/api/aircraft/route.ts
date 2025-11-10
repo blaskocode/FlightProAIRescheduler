@@ -22,9 +22,9 @@ export async function GET(request: NextRequest) {
       userSchoolId = instructor?.schoolId;
     }
 
-    // Admins and super_admins can see all aircraft (no schoolId required)
+    // Admins can see all aircraft (no schoolId required)
     // Students and instructors need a schoolId
-    if (!userSchoolId && authUser.role !== 'admin' && authUser.role !== 'super_admin') {
+    if (!userSchoolId && authUser.role !== 'admin') {
       return NextResponse.json(
         { error: 'User has no school assigned' },
         { status: 400 }
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
 
     const where: any = {};
     // Only filter by school if user has one and is not an admin
-    if (userSchoolId && authUser.role !== 'admin' && authUser.role !== 'super_admin') {
+    if (userSchoolId && authUser.role !== 'admin') {
       where.schoolId = userSchoolId;
     }
 

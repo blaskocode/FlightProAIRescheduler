@@ -347,7 +347,7 @@ export function FlightList({ onFlightBooked }: FlightListProps = {}) {
               </Select>
             </div>
 
-            {(authUser?.role === 'admin' || authUser?.role === 'super_admin') && (
+            {authUser?.role === 'admin' && (
               <div className="space-y-1.5">
                 <Label htmlFor="instructor-filter" className="text-sm font-medium text-gray-700">
                   Instructor

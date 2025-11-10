@@ -27,13 +27,13 @@ export async function POST(request: NextRequest) {
     }
 
     const authUser = await getUserRole(uid);
-    if (!authUser || authUser.role !== 'admin') {
+    if (!authUser || authUser.role !== 'admin' || !authUser.adminId) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
     }
 
     // Check if super admin
     const admin = await prisma.admin.findUnique({
-      where: { id: authUser.id },
+      where: { id: authUser.adminId },
       select: { role: true },
     });
 

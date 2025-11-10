@@ -59,7 +59,7 @@ export async function POST(
     let overrideBy: string | null = null;
     if (authUser.role === 'instructor' && authUser.instructorId) {
       overrideBy = authUser.instructorId;
-    } else if (authUser.role === 'admin' || authUser.role === 'super_admin') {
+    } else if (authUser.role === 'admin') {
       // For admins, use the flight's instructor ID if available, or null
       overrideBy = flight.instructorId;
     }

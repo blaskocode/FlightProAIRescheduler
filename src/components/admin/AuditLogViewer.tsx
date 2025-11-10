@@ -234,17 +234,18 @@ export function AuditLogViewer() {
                     </div>
                   )}
                   <div>
-                  <span className="font-semibold">User:</span> {log.userId.substring(0, 8)}...
+                    <span className="font-semibold">User:</span> {log.userId.substring(0, 8)}...
+                  </div>
                 </div>
+                {log.metadata && Object.keys(log.metadata).length > 0 && (
+                  <div className="mt-2 p-2 bg-white rounded text-xs">
+                    <span className="font-semibold">Metadata:</span>{' '}
+                    <pre className="inline">{JSON.stringify(log.metadata, null, 2)}</pre>
+                  </div>
+                )}
               </div>
-              {log.metadata && Object.keys(log.metadata).length > 0 && (
-                <div className="mt-2 p-2 bg-white rounded text-xs">
-                  <span className="font-semibold">Metadata:</span>{' '}
-                  <pre className="inline">{JSON.stringify(log.metadata, null, 2)}</pre>
-                </div>
-              )}
-            </div>
-          ))}
+            ))
+          )}
         </div>
 
         {/* Pagination */}

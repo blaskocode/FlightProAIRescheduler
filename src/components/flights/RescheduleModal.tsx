@@ -95,10 +95,10 @@ export function RescheduleModal({
           const aircraft = await aircraftResponse.json();
 
           // Create lookup maps
-          const instructorMap = new Map(
+          const instructorMap = new Map<string, string>(
             instructors.map((inst: any) => [inst.id, `${inst.firstName} ${inst.lastName}`])
           );
-          const aircraftMap = new Map(
+          const aircraftMap = new Map<string, string>(
             aircraft.map((ac: any) => [ac.id, ac.tailNumber])
           );
 

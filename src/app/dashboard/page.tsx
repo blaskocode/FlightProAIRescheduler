@@ -19,7 +19,7 @@ export default function DashboardPage() {
   
   // Get selected school from localStorage for super admins, or default to first school
   useEffect(() => {
-    if (typeof window !== 'undefined' && (authUser?.role === 'admin' || authUser?.role === 'super_admin') && !authUser?.schoolId) {
+    if (typeof window !== 'undefined' && authUser?.role === 'admin' && !authUser?.schoolId) {
       // Fetch schools list
       fetch('/api/schools')
         .then(res => res.json())
@@ -117,7 +117,7 @@ export default function DashboardPage() {
             <span className="text-xs sm:text-sm text-sky-600 bg-sky-50 px-3 py-1.5 rounded-full border border-sky-200">
               <span className="capitalize font-semibold text-sky-700">{authUser?.role || 'user'}</span>
             </span>
-            {(authUser?.role === 'admin' || authUser?.role === 'super_admin') && !authUser?.schoolId && (
+            {authUser?.role === 'admin' && !authUser?.schoolId && (
               <SchoolSwitcher />
             )}
           </div>

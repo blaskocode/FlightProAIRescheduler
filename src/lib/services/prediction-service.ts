@@ -276,7 +276,8 @@ function calculateWeatherImpact(forecast: {
   }
 
   // Precipitation impact
-  if (forecast.precipitation) {
+  // Precipitation check removed - field doesn't exist in WeatherCheck model
+  if (false) {
     impact += 10;
     reasons.push('Precipitation expected');
   }

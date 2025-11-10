@@ -57,11 +57,10 @@ export async function generatePredictionsForUpcomingFlights() {
         if (flight.weatherChecks.length > 0) {
           const latestCheck = flight.weatherChecks[0];
           weatherForecast = {
-            visibility: latestCheck.visibility,
-            ceiling: latestCheck.ceiling,
-            windSpeed: latestCheck.windSpeed,
-            windGust: latestCheck.windGust,
-            precipitation: latestCheck.precipitation,
+            visibility: latestCheck.visibility ?? undefined,
+            ceiling: latestCheck.ceiling ?? undefined,
+            windSpeed: latestCheck.windSpeed ?? undefined,
+            windGust: latestCheck.windGust ?? undefined,
             conditions: latestCheck.reasons as string[],
           };
         }

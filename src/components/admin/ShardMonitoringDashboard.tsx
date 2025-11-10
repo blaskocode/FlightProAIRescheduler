@@ -193,7 +193,7 @@ export function ShardMonitoringDashboard() {
                     shard.health === 'healthy'
                       ? 'default'
                       : shard.health === 'degraded'
-                      ? 'warning'
+                      ? 'secondary'
                       : 'destructive'
                   }
                 >

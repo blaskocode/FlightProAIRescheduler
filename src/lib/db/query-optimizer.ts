@@ -63,7 +63,7 @@ export async function getFlightsOptimized(filters: {
         studentId: filters.studentId,
         instructorId: filters.instructorId,
         aircraftId: filters.aircraftId,
-        status: filters.status ? { in: filters.status } : undefined,
+        status: filters.status ? { in: filters.status as any[] } : undefined,
         scheduledStart: filters.startDate || filters.endDate
           ? {
               gte: filters.startDate,
@@ -134,7 +134,7 @@ export async function getStudentsOptimized(schoolId?: string) {
         progress: {
           take: 5, // Limit progress entries
           orderBy: {
-            completedAt: 'desc',
+            createdAt: 'desc',
           },
         },
         preferredInstructor: {

@@ -176,7 +176,7 @@ export function WeatherAnalyticsDashboard({ schoolId }: WeatherAnalyticsDashboar
                           ? 'default'
                           : window.recommendation === 'GOOD'
                           ? 'default'
-                          : 'warning'
+                          : 'secondary'
                       }
                     >
                       {window.recommendation}

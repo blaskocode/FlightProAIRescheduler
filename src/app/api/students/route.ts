@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Filter by school if user has one (unless they're super admin)
-    if (userSchoolId && authUser.role !== 'super_admin') {
+    if (userSchoolId && authUser.role !== 'admin') {
       where.schoolId = userSchoolId;
     }
 

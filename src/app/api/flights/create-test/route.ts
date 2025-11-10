@@ -57,8 +57,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get instructor if user is a student
+    // Get instructor if user is a student, or get student if user is an instructor
     let instructor = null;
+    let student = null;
+    
     if (authUser.studentId) {
       instructor = await prisma.instructor.findFirst({
         where: { schoolId: userSchoolId },
@@ -67,6 +69,17 @@ export async function POST(request: NextRequest) {
       if (!instructor) {
         return NextResponse.json(
           { error: 'No instructor found for this school' },
+          { status: 404 }
+        );
+      }
+    } else {
+      student = await prisma.student.findFirst({
+        where: { schoolId: userSchoolId },
+      });
+      
+      if (!student) {
+        return NextResponse.json(
+          { error: 'No student found for this school' },
           { status: 404 }
         );
       }
@@ -92,8 +105,8 @@ export async function POST(request: NextRequest) {
       const flight = await prisma.flight.create({
         data: {
           schoolId: userSchoolId,
-          studentId: authUser.studentId || undefined,
-          instructorId: authUser.studentId ? instructor?.id : authUser.instructorId || undefined,
+          studentId: authUser.studentId || student!.id,
+          instructorId: authUser.studentId ? instructor!.id : authUser.instructorId!,
           aircraftId: aircraft.id,
           scheduledStart,
           scheduledEnd,

@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { executeAcrossAllShards, getShardPool } from './shard-routing';
+import { executeAcrossAllShards } from './shard-routing';
 
 /**
  * Cross-Shard Query Federation
@@ -95,7 +95,11 @@ export async function getTotalFlightsAcrossShards(
 export async function getAggregatedMetricsAcrossShards(
   startDate: Date,
   endDate: Date
-) {
+): Promise<any> {
+  // TODO: Implement getShardPool in shard-routing.ts
+  throw new Error('getShardPool not yet implemented in shard-routing.ts');
+  
+  /* Commented out until getShardPool is implemented
   const pool = getShardPool();
   const configs = pool.getConfigs();
   
@@ -159,5 +163,6 @@ export async function getAggregatedMetricsAcrossShards(
     shards: metrics.filter(Boolean),
     totals,
   };
+  */
 }
 

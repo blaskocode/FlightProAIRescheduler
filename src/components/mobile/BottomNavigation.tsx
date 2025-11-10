@@ -33,7 +33,7 @@ export function BottomNavigation() {
   // Filter nav items based on user role
   const navItems = allNavItems.filter((item) => {
     if (!item.roles) return true; // Show if no role restriction
-    if (!authUser) return false; // Hide if user not loaded
+    if (!authUser || !authUser.role) return false; // Hide if user not loaded or role not set
     return item.roles.includes(authUser.role);
   });
 

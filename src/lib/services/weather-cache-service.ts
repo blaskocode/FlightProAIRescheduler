@@ -1,6 +1,5 @@
 import { WeatherData } from './weather-providers/types';
 import { Redis } from 'ioredis';
-import { connection } from '@/lib/jobs/queues';
 import { prisma } from '@/lib/prisma';
 
 /**
@@ -20,11 +19,8 @@ let redisClient: Redis | null = null;
 const REDIS_TTL = 15 * 60; // 15 minutes in seconds
 
 function getRedisClient(): Redis | null {
-  if (!redisClient && connection) {
-    redisClient = new Redis({
-      host: connection.host,
-      port: connection.port,
-      password: connection.password,
+  if (!redisClient && process.env.REDIS_URL) {
+    redisClient = new Redis(process.env.REDIS_URL, {
       db: 2, // Use database 2 for weather cache
     });
   }

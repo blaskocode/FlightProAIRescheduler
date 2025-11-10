@@ -245,7 +245,7 @@ export function MetricsDashboard({ schoolId }: { schoolId?: string }) {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {metrics.resourceUtilization.instructors.map((inst) => (
-                  <tr key={inst.id}>
+                  <tr key={inst.name}>
                     <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium">{inst.name}</td>
                     <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm">{inst.scheduledHours}</td>
                     <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm">{inst.actualHours}</td>

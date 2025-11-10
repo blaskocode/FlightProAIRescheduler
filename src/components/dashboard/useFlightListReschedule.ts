@@ -323,7 +323,7 @@ export function useFlightListReschedule({
         const alertsResponse = await fetch('/api/weather/alerts');
         if (alertsResponse.ok) {
           const alerts = await alertsResponse.json();
-          const flightIdsWithAlerts = new Set(alerts.map((alert: any) => alert.flightId));
+          const flightIdsWithAlerts = new Set<string>(alerts.map((alert: any) => alert.flightId as string));
           console.log('[useFlightListReschedule] Weather alerts fetched:', alerts.length);
           console.log('[useFlightListReschedule] Flight IDs with alerts:', Array.from(flightIdsWithAlerts));
           setWeatherAlerts(flightIdsWithAlerts);
@@ -399,14 +399,14 @@ export function useFlightListReschedule({
             });
             if (aircraftResponse.ok) {
               const allAircraft = await aircraftResponse.json();
-              const aircraftMap = new Map(allAircraft.map((ac: any) => [ac.id, ac]));
+              const aircraftMap = new Map<string, any>(allAircraft.map((ac: any) => [ac.id, ac]));
               
               for (const [flightId, detail] of detailsMap.entries()) {
                 const aircraft = aircraftMap.get(detail.newAircraftId);
-                if (aircraft) {
+                if (aircraft && aircraft.tailNumber) {
                   detailsMap.set(flightId, {
                     ...detail,
-                    newAircraftTailNumber: aircraft.tailNumber,
+                    newAircraftTailNumber: aircraft.tailNumber as string,
                   });
                 }
               }

@@ -42,6 +42,12 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    if (!authUser.role) {
+      return NextResponse.redirect(
+        `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/settings/calendar?error=invalid_user_role`
+      );
+    }
+
     // Exchange code for tokens
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;

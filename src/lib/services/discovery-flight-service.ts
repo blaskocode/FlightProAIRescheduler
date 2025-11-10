@@ -183,7 +183,7 @@ export async function createDiscoveryFlightBooking(
     // Don't fail the booking if email fails
   }
 
-  return { flight, discoveryRecord };
+  return { flight, discoveryRecord: discoveryRecord as DiscoveryFlightRecord };
 }
 
 /**
@@ -244,7 +244,7 @@ export async function convertDiscoveryToStudent(
     console.error('Error sending enrollment offer:', error);
   }
 
-  return { student, discoveryRecord };
+  return { student, discoveryRecord: discoveryRecord as DiscoveryFlightRecord };
 }
 
 /**

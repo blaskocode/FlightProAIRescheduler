@@ -45,16 +45,7 @@ export async function processWeatherCheck(job: Job<WeatherCheckJobData>) {
           select: {
             id: true,
             tailNumber: true,
-            aircraftType: {
-              select: {
-                id: true,
-                make: true,
-                model: true,
-                category: true,
-                maxWindSpeed: true,
-                crosswindLimit: true, // Needed for getWeatherMinimums
-              },
-            },
+            aircraftType: true, // Select all fields to satisfy type requirements
           },
         },
       },

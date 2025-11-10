@@ -51,7 +51,7 @@ export function FlightCard({
   setRescheduleModalOpen,
 }: FlightCardProps) {
   const [showRoute, setShowRoute] = useState(false);
-  const hasRoute = flight.route || (flight.departureAirport && flight.destinationAirport);
+  const hasRoute = false; // Route info not available in current Flight type
 
   const getStatusBadgeClass = (status: string) => {
     // Treat RESCHEDULE_CONFIRMED as CONFIRMED (for backwards compatibility)
@@ -167,7 +167,7 @@ export function FlightCard({
                            weatherAlerts.has(flight.id);
     
     // Only show for instructors/admins
-    if ((authUser?.role === 'instructor' || authUser?.role === 'admin' || authUser?.role === 'super_admin') &&
+    if ((authUser?.role === 'instructor' || authUser?.role === 'admin') &&
         hasWeatherIssue &&
         !flight.weatherOverride) {
       // For instructors, only show if they're assigned to the flight
@@ -278,7 +278,7 @@ export function FlightCard({
         {showRoute && hasRoute && (
           <div className="mt-4 pt-4 border-t border-cloud-200">
             <RouteVisualization
-              route={flight.route || undefined}
+              route={undefined}
               flightId={flight.id}
               height="300px"
               showDetails={true}
