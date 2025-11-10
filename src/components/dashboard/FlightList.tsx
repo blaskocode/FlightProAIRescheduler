@@ -49,7 +49,8 @@ export function FlightList({ onFlightBooked }: FlightListProps = {}) {
       if (authLoading) {
         return;
       }
-      setError(new Error('User account not fully set up. Please try refreshing the page.'));
+      // More helpful error message
+      setError(new Error('Unable to load your account information. This may be due to a database connection issue. Please try refreshing the page or contact support if the problem persists.'));
       setLoading(false);
       return;
     }
@@ -102,7 +103,7 @@ export function FlightList({ onFlightBooked }: FlightListProps = {}) {
       setLoading(true);
       
       syncTimeoutRef.current = setTimeout(() => {
-        setError(new Error('User account not fully set up. Please try refreshing the page.'));
+        setError(new Error('Account synchronization is taking longer than expected. This may indicate a database connection issue. Please try refreshing the page.'));
         setLoading(false);
         syncTimeoutRef.current = null;
       }, 3000);

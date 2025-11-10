@@ -163,6 +163,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                         break;
                       }
                     }
+                  } else if (syncResponse.status === 503) {
+                    // Database connection error - retry with exponential backoff
+                    const errorData = await syncResponse.json().catch(() => ({ error: 'Database connection error' }));
+                    console.error('Database connection error during sync:', errorData);
+                    
+                    // Retry sync with exponential backoff (up to 3 attempts)
+                    for (let retryAttempt = 0; retryAttempt < 3; retryAttempt++) {
+                      await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, retryAttempt)));
+                      if (!isMounted) break;
+                      
+                      try {
+                        const retrySyncResponse = await fetch('/api/auth/sync-user', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            uid: firebaseUser.uid,
+                            email: firebaseUser.email,
+                            role: role,
+                            schoolId: role === 'admin' ? undefined : schoolId,
+                          }),
+                        });
+                        
+                        if (retrySyncResponse.ok || retrySyncResponse.status === 409) {
+                          // Sync succeeded, now fetch user role
+                          for (let attempt = 0; attempt < 3; attempt++) {
+                            await new Promise(resolve => setTimeout(resolve, 300 * (attempt + 1)));
+                            if (!isMounted) break;
+                            
+                            const retryResponse = await fetch(`/api/auth/user-role?uid=${firebaseUser.uid}`);
+                            if (retryResponse.ok) {
+                              const roleData = await retryResponse.json();
+                              if (isMounted) {
+                                setAuthUser(roleData);
+                              }
+                              break;
+                            }
+                          }
+                          break;
+                        }
+                      } catch (retryError) {
+                        console.error(`Retry attempt ${retryAttempt + 1} failed:`, retryError);
+                      }
+                    }
                   } else {
                     // Log sync error for debugging
                     const errorData = await syncResponse.json().catch(() => ({ error: 'Unknown error' }));

@@ -7,9 +7,27 @@ import { prisma } from '@/lib/prisma';
  * This is called after signup to create the database record
  */
 export async function POST(request: NextRequest) {
+  // Extract body once at the top level so it's available in catch blocks
+  let body: any;
+  let uid: string | undefined;
+  let email: string | undefined;
+  let role: string = 'student';
+  let schoolId: string | undefined;
+  let firstName: string | undefined;
+  let lastName: string | undefined;
+  let phone: string | undefined;
+  let certificateNumber: string | undefined;
+  
   try {
-    const body = await request.json();
-    const { uid, email, role = 'student', schoolId, firstName, lastName, phone, certificateNumber } = body;
+    body = await request.json();
+    uid = body.uid;
+    email = body.email;
+    role = body.role || 'student';
+    schoolId = body.schoolId;
+    firstName = body.firstName;
+    lastName = body.lastName;
+    phone = body.phone;
+    certificateNumber = body.certificateNumber;
 
     if (!uid || !email) {
       return NextResponse.json(
@@ -240,13 +258,24 @@ export async function POST(request: NextRequest) {
       stack: error.stack,
     });
     
+    // Handle database connection errors
+    if (error.code === 'P1001' || error.code === 'P1000' || error.message?.includes('ECONNREFUSED') || error.message?.includes('connect')) {
+      console.error('Database connection error - DATABASE_URL may be incorrect or database is not accessible');
+      return NextResponse.json(
+        { 
+          error: 'Database connection failed. Please check DATABASE_URL environment variable.',
+          code: error.code,
+          type: 'database_connection_error',
+        },
+        { status: 503 } // Service Unavailable
+      );
+    }
+    
     // Handle unique constraint violations (user already exists)
     if (error.code === 'P2002') {
       // User already exists - try to find and return existing user
+      // uid and email are already extracted at the top level
       try {
-        // Re-extract body to access uid and email in catch scope
-        const body = await request.json();
-        const { uid, email } = body;
         
         // Check all tables for existing user by firebaseUid
         const existingStudent = await prisma.student.findUnique({
