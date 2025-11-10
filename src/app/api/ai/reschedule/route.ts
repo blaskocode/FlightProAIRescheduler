@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { generateRescheduleSuggestions } from '@/lib/services/ai-reschedule-service';
 import { prisma } from '@/lib/prisma';
 
+// Force dynamic rendering to prevent build-time analysis
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();

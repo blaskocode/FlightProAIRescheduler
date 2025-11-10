@@ -2,9 +2,21 @@ import OpenAI from 'openai';
 import { prisma } from '@/lib/prisma';
 import { fetchFAAWeather } from './weather-service';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Lazy initialization to avoid build-time errors when API key is not available
+let openaiClient: OpenAI | null = null;
+
+function getOpenAIClient(): OpenAI {
+  if (!openaiClient) {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      throw new Error('OPENAI_API_KEY environment variable is not set');
+    }
+    openaiClient = new OpenAI({
+      apiKey,
+    });
+  }
+  return openaiClient;
+}
 
 export interface RescheduleSuggestion {
   slot: string; // ISO datetime
@@ -261,6 +273,7 @@ ${routeWeatherInfo}`;
     // Use environment variable or default to gpt-4
     const model = process.env.OPENAI_MODEL || 'gpt-4';
     
+    const openai = getOpenAIClient();
     const completion = await openai.chat.completions.create({
       model,
       messages: [
