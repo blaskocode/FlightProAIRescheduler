@@ -1,14 +1,48 @@
 import { Queue, Worker, QueueEvents } from 'bullmq';
 import Redis from 'ioredis';
 
-const connection = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
-  maxRetriesPerRequest: null,
-});
+/**
+ * Get Redis connection (lazy initialization)
+ * Only initializes when actually needed, preventing build-time errors
+ */
+let connection: Redis | null = null;
+
+function getConnection(): Redis | null {
+  // Don't create connection during build phase
+  if (process.env.NEXT_PHASE === 'phase-production-build') {
+    return null;
+  }
+
+  if (!connection && process.env.REDIS_URL) {
+    try {
+      connection = new Redis(process.env.REDIS_URL, {
+        maxRetriesPerRequest: null,
+        // Use lazy connect to prevent immediate connection attempts
+        lazyConnect: true,
+        retryStrategy: (times) => {
+          const delay = Math.min(times * 50, 2000);
+          return delay;
+        },
+        // Don't fail on connection errors during initialization
+        enableOfflineQueue: false,
+      });
+    } catch (error) {
+      // Silently fail during build - Redis will be available at runtime
+      return null;
+    }
+  }
+  return connection;
+}
+
+// Create connection only if REDIS_URL is available
+const redisConnection = process.env.REDIS_URL && process.env.NEXT_PHASE !== 'phase-production-build'
+  ? getConnection()
+  : null;
 
 // Weather Check Queue
 // Configure to keep completed/failed jobs for status tracking
 export const weatherCheckQueue = new Queue('weather-check', { 
-  connection,
+  connection: redisConnection || undefined,
   defaultJobOptions: {
     removeOnComplete: {
       age: 3600, // Keep completed jobs for 1 hour
@@ -22,19 +56,30 @@ export const weatherCheckQueue = new Queue('weather-check', {
 });
 
 // Currency Check Queue
-export const currencyCheckQueue = new Queue('currency-check', { connection });
+export const currencyCheckQueue = new Queue('currency-check', { 
+  connection: redisConnection || undefined 
+});
 
 // Maintenance Reminder Queue
-export const maintenanceReminderQueue = new Queue('maintenance-reminder', { connection });
+export const maintenanceReminderQueue = new Queue('maintenance-reminder', { 
+  connection: redisConnection || undefined 
+});
 
 // Reschedule Expiration Queue
-export const rescheduleExpirationQueue = new Queue('reschedule-expiration', { connection });
-export const predictionGenerationQueue = new Queue('prediction-generation', { connection });
+export const rescheduleExpirationQueue = new Queue('reschedule-expiration', { 
+  connection: redisConnection || undefined 
+});
+
+export const predictionGenerationQueue = new Queue('prediction-generation', { 
+  connection: redisConnection || undefined 
+});
 
 // Notification Queue
-export const notificationQueue = new Queue('notification', { connection });
+export const notificationQueue = new Queue('notification', { 
+  connection: redisConnection || undefined 
+});
 
-export { connection };
+export { getConnection as connection };
 
 // Import workers to ensure they start when the module is loaded
 // This is important for Next.js - workers need to be imported somewhere

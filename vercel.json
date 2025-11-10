@@ -12,14 +12,6 @@
     {
       "path": "/api/jobs/currency-check",
       "schedule": "0 0 * * *"
-    },
-    {
-      "path": "/api/jobs/maintenance-reminder",
-      "schedule": "0 9 * * *"
-    },
-    {
-      "path": "/api/jobs/prediction-generation",
-      "schedule": "0 2 * * *"
     }
   ]
 }
