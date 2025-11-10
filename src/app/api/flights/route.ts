@@ -80,7 +80,13 @@ export async function GET(request: NextRequest) {
     if (instructorId && authUser.role === 'admin') {
       where.instructorId = instructorId;
     }
-    if (status) where.status = status;
+    if (status) {
+      where.status = status;
+    } else {
+      // By default, exclude RESCHEDULED flights (they've been replaced by new confirmed flights)
+      // Only show them if explicitly requested via status query param
+      where.status = { not: 'RESCHEDULED' };
+    }
     if (startDate || endDate) {
       where.scheduledStart = {};
       if (startDate) where.scheduledStart.gte = new Date(startDate);

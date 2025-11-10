@@ -5,6 +5,7 @@ export interface Flight {
   status: string;
   lessonTitle: string | null;
   weatherOverride?: boolean;
+  rescheduledFromId?: string | null;
   student: {
     firstName: string;
     lastName: string;

@@ -179,7 +179,7 @@ export async function POST(
         );
       }
       
-      // Create new flight with RESCHEDULE_CONFIRMED status
+      // Create new flight with CONFIRMED status (but track that it was rescheduled via rescheduledFromId)
       const newFlight = await prisma.flight.create({
         data: {
           schoolId: rescheduleRequest.flight.schoolId,
@@ -196,8 +196,8 @@ export async function POST(
           departureAirport: rescheduleRequest.flight.departureAirport || 'KAUS',
           destinationAirport: rescheduleRequest.flight.destinationAirport,
           route: rescheduleRequest.flight.route,
-          status: 'RESCHEDULE_CONFIRMED',
-          rescheduledFromId: rescheduleRequest.flightId,
+          status: 'CONFIRMED', // Always CONFIRMED - UI will show "Rescheduled" badge if rescheduledFromId exists
+          rescheduledFromId: rescheduleRequest.flightId, // Track that this was rescheduled
         },
       });
 

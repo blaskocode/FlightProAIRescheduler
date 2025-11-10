@@ -163,6 +163,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                         break;
                       }
                     }
+                  } else {
+                    // Log sync error for debugging
+                    const errorData = await syncResponse.json().catch(() => ({ error: 'Unknown error' }));
+                    console.error('Failed to sync user:', syncResponse.status, errorData);
                   }
                 } catch (syncError) {
                   console.error('Error syncing user (non-blocking):', syncError);

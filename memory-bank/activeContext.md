@@ -250,6 +250,17 @@
     - Updated `WeatherMapDashboard` to use Mapbox component with map/list view toggle
     - Created `MAPBOX_SETUP.md` documentation for token setup
     - Map displays airport weather alerts with popups showing alert details, flight times, confidence levels
+  - **Recent Bug Fixes & Improvements (Current Session)**:
+    - ✅ Fixed React hooks error in FlightList (moved handleRefresh before early return)
+    - ✅ Fixed instructor account sync issue (added required certificateNumber field with default value)
+    - ✅ Assigned flights to instructor.demo account (5 flights assigned)
+    - ✅ Improved rescheduled flight display (show as CONFIRMED with "Rescheduled" badge instead of RESCHEDULED status)
+    - ✅ Excluded RESCHEDULED flights from default flights query (only show if explicitly requested)
+    - ✅ Created student flight booking functionality:
+      - Created `/api/instructors` endpoint for fetching available instructors
+      - Created `BookFlightModal` component for students to book new flights
+      - Added "Book Flight" button to flights page (visible only to students)
+      - Integrated booking flow with automatic flight list refresh
 
 ## Current Priorities
 

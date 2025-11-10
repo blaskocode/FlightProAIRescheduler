@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { RouteVisualization } from './RouteVisualization';
 
@@ -51,6 +52,14 @@ export function RescheduleModal({
   useEffect(() => {
     setLoading(false);
   }, [flightId]);
+
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, []);
 
   // Check calendar conflicts for all suggestions
   useEffect(() => {
@@ -143,9 +152,18 @@ export function RescheduleModal({
   // Detect mobile screen size
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className={`w-full ${isMobile ? 'h-full max-h-full rounded-none' : 'max-w-2xl rounded-lg'} bg-white ${isMobile ? 'p-4' : 'p-6'} shadow-xl ${isMobile ? 'overflow-y-auto' : ''}`}>
+  // Use portal to render modal at document root level
+  const modalContent = (
+    <div 
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm"
+      onClick={onClose}
+      style={{ zIndex: 9999 }}
+    >
+      <div 
+        className={`w-full ${isMobile ? 'h-full max-h-full rounded-none' : 'max-w-2xl max-h-[90vh] rounded-lg'} bg-white ${isMobile ? 'p-4' : 'p-6'} shadow-2xl overflow-y-auto`}
+        onClick={(e) => e.stopPropagation()}
+        style={{ zIndex: 10000 }}
+      >
         <div className="flex items-center justify-between mb-4">
           <h2 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold`}>Reschedule Options</h2>
           {!isMobile && (
@@ -344,5 +362,12 @@ export function RescheduleModal({
       </div>
     </div>
   );
+
+  // Render using portal if in browser, otherwise render normally
+  if (typeof window !== 'undefined') {
+    return createPortal(modalContent, document.body);
+  }
+
+  return modalContent;
 }
 

@@ -1,37 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import dynamic from 'next/dynamic';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-
-// Dynamically import map components to avoid SSR issues
-const MapContainer = dynamic(
-  () => import('react-leaflet').then((mod) => mod.MapContainer),
-  { ssr: false }
-);
-const TileLayer = dynamic(
-  () => import('react-leaflet').then((mod) => mod.TileLayer),
-  { ssr: false }
-);
-const Marker = dynamic(
-  () => import('react-leaflet').then((mod) => mod.Marker),
-  { ssr: false }
-);
-const Popup = dynamic(
-  () => import('react-leaflet').then((mod) => mod.Popup),
-  { ssr: false }
-);
-const Polyline = dynamic(
-  () => import('react-leaflet').then((mod) => mod.Polyline),
-  { ssr: false }
-);
-
-// Import Leaflet CSS only on client
-if (typeof window !== 'undefined') {
-  require('leaflet/dist/leaflet.css');
-}
+import { MapboxRouteMap } from './MapboxRouteMap';
 
 interface WaypointData {
   airportCode: string;
@@ -63,11 +36,13 @@ export function RouteVisualization({
   const [error, setError] = useState<string | null>(null);
   const [routeData, setRouteData] = useState<any>(null);
   const [mounted, setMounted] = useState(false);
-  const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
+  const [viewMode, setViewMode] = useState<'map' | 'list'>('map'); // Default to map now that we're using Mapbox
+  const [mapError, setMapError] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
 
   useEffect(() => {
     if (!mounted) return;
@@ -137,31 +112,15 @@ export function RouteVisualization({
     }
   };
 
-  const createCustomIcon = (color: string, label: string) => {
-    if (typeof window === 'undefined') return undefined;
-    const L = require('leaflet');
-    return L.divIcon({
-      className: 'custom-route-marker',
-      html: `
-        <div style="
-          background-color: ${color}; 
-          width: 24px; 
-          height: 24px; 
-          border-radius: 50%; 
-          border: 3px solid white; 
-          box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 10px;
-          font-weight: bold;
-          color: white;
-        ">${label}</div>
-      `,
-      iconSize: [24, 24],
-      iconAnchor: [12, 12],
-    });
+  // Helper to extract value from weather data fields (handles both object {value, units} and primitive)
+  const getWeatherValue = (field: any): number | string => {
+    if (field === null || field === undefined) return '';
+    if (typeof field === 'object' && 'value' in field) {
+      return field.value;
+    }
+    return field;
   };
+
 
   const calculateDistance = () => {
     if (waypoints.length < 2) return 0;
@@ -246,27 +205,19 @@ export function RouteVisualization({
   const distance = calculateDistance();
   const flightTime = estimateFlightTime(distance);
   const routeString = routeData?.route || waypoints.map(wp => wp.airportCode).join('-');
-  const polylinePositions = waypoints.map(wp => [wp.latitude, wp.longitude] as [number, number]);
-
-  // Calculate map bounds
-  const bounds = waypoints.length > 0
-    ? waypoints.map(wp => [wp.latitude, wp.longitude] as [number, number])
-    : [[30.1945, -97.6699] as [number, number]];
 
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className={compact ? 'text-lg' : ''}>Route Visualization</CardTitle>
-          {!compact && (
-            <Button
-              onClick={() => setViewMode(viewMode === 'map' ? 'list' : 'map')}
-              variant="outline"
-              size="sm"
-            >
-              {viewMode === 'map' ? 'List View' : 'Map View'}
-            </Button>
-          )}
+          <Button
+            onClick={() => setViewMode(viewMode === 'map' ? 'list' : 'map')}
+            variant="outline"
+            size="sm"
+          >
+            {viewMode === 'map' ? 'List View' : 'Map View'}
+          </Button>
         </div>
         {showDetails && routeData && (
           <div className="mt-2 flex flex-wrap gap-2 text-sm">
@@ -284,88 +235,9 @@ export function RouteVisualization({
         )}
       </CardHeader>
       <CardContent>
-        {viewMode === 'map' ? (
+        {viewMode === 'map' && !mapError ? (
           <div className="rounded-lg overflow-hidden border" style={{ height }}>
-            <MapContainer
-              center={waypoints[0] ? [waypoints[0].latitude, waypoints[0].longitude] : [30.1945, -97.6699]}
-              zoom={6}
-              style={{ height: '100%', width: '100%' }}
-              scrollWheelZoom={true}
-              bounds={bounds}
-              boundsOptions={{ padding: [20, 20] }}
-            >
-              <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              />
-              {/* Route polyline */}
-              {polylinePositions.length > 1 && (
-                <Polyline
-                  positions={polylinePositions}
-                  color="#3b82f6"
-                  weight={3}
-                  opacity={0.7}
-                />
-              )}
-              {/* Waypoint markers */}
-              {waypoints.map((waypoint, index) => {
-                const color = getMarkerColor(waypoint.weatherStatus);
-                const label = index === 0 ? 'D' : index === waypoints.length - 1 ? 'A' : `${index}`;
-                const icon = createCustomIcon(color, label);
-                
-                return (
-                  <Marker
-                    key={`${waypoint.airportCode}-${index}`}
-                    position={[waypoint.latitude, waypoint.longitude]}
-                    icon={icon}
-                  >
-                    <Popup>
-                      <div className="p-2 min-w-[200px]">
-                        <h3 className="font-semibold text-lg mb-2">
-                          {waypoint.airportCode}
-                          {index === 0 && ' (Departure)'}
-                          {index === waypoints.length - 1 && ' (Arrival)'}
-                        </h3>
-                        {waypoint.weatherStatus && (
-                          <Badge
-                            variant={
-                              waypoint.weatherStatus === 'UNSAFE'
-                                ? 'destructive'
-                                : waypoint.weatherStatus === 'MARGINAL'
-                                ? 'default'
-                                : 'outline'
-                            }
-                            className="mb-2"
-                          >
-                            {waypoint.weatherStatus}
-                          </Badge>
-                        )}
-                        {waypoint.weatherData && (
-                          <div className="mt-2 text-xs space-y-1">
-                            <p><strong>Wind:</strong> {waypoint.weatherData.windSpeed} kts @ {waypoint.weatherData.windDirection}°</p>
-                            <p><strong>Visibility:</strong> {waypoint.weatherData.visibility} SM</p>
-                            <p><strong>Ceiling:</strong> {waypoint.weatherData.ceiling ? `${waypoint.weatherData.ceiling} ft` : 'Unlimited'}</p>
-                            {waypoint.weatherData.temperature && (
-                              <p><strong>Temp:</strong> {waypoint.weatherData.temperature}°F</p>
-                            )}
-                          </div>
-                        )}
-                        {waypoint.checkResult?.reasons && waypoint.checkResult.reasons.length > 0 && (
-                          <div className="mt-2 text-xs">
-                            <p className="font-medium">Issues:</p>
-                            <ul className="list-disc list-inside text-gray-700">
-                              {waypoint.checkResult.reasons.map((reason: string, idx: number) => (
-                                <li key={idx}>{reason}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                      </div>
-                    </Popup>
-                  </Marker>
-                );
-              })}
-            </MapContainer>
+            <MapboxRouteMap waypoints={waypoints} height={height} />
           </div>
         ) : (
           <div className="space-y-3 max-h-96 overflow-y-auto">
@@ -399,11 +271,11 @@ export function RouteVisualization({
                 </div>
                 {waypoint.weatherData && (
                   <div className="mt-2 text-sm space-y-1">
-                    <p><strong>Wind:</strong> {waypoint.weatherData.windSpeed} kts @ {waypoint.weatherData.windDirection}°</p>
-                    <p><strong>Visibility:</strong> {waypoint.weatherData.visibility} SM</p>
-                    <p><strong>Ceiling:</strong> {waypoint.weatherData.ceiling ? `${waypoint.weatherData.ceiling} ft` : 'Unlimited'}</p>
+                    <p><strong>Wind:</strong> {getWeatherValue(waypoint.weatherData.windSpeed)} kts @ {getWeatherValue(waypoint.weatherData.windDirection)}°</p>
+                    <p><strong>Visibility:</strong> {getWeatherValue(waypoint.weatherData.visibility)} SM</p>
+                    <p><strong>Ceiling:</strong> {waypoint.weatherData.ceiling ? `${getWeatherValue(waypoint.weatherData.ceiling)} ft` : 'Unlimited'}</p>
                     {waypoint.weatherData.temperature && (
-                      <p><strong>Temp:</strong> {waypoint.weatherData.temperature}°F</p>
+                      <p><strong>Temp:</strong> {getWeatherValue(waypoint.weatherData.temperature)}°F</p>
                     )}
                   </div>
                 )}

@@ -9,7 +9,7 @@ import { prisma } from '@/lib/prisma';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { uid, email, role = 'student', schoolId, firstName, lastName, phone } = body;
+    const { uid, email, role = 'student', schoolId, firstName, lastName, phone, certificateNumber } = body;
 
     if (!uid || !email) {
       return NextResponse.json(
@@ -176,18 +176,15 @@ export async function POST(request: NextRequest) {
         },
       });
     } else if (role === 'instructor') {
-      if (!schoolId) {
-        return NextResponse.json(
-          { error: 'schoolId is required for instructors' },
-          { status: 400 }
-        );
-      }
+      // Get school - use provided schoolId or fall back to first school (for development)
+      const school = schoolId
+        ? await prisma.school.findUnique({ where: { id: schoolId } })
+        : await prisma.school.findFirst();
 
-      const school = await prisma.school.findUnique({ where: { id: schoolId } });
       if (!school) {
         return NextResponse.json(
-          { error: 'School not found' },
-          { status: 404 }
+          { error: 'No school found. Please create a school first.' },
+          { status: 400 }
         );
       }
 
@@ -199,6 +196,7 @@ export async function POST(request: NextRequest) {
           firstName: firstName || email.split('@')[0],
           lastName: lastName || 'User',
           phone: phone || '',
+          certificateNumber: certificateNumber || `CFI-${uid.substring(0, 8).toUpperCase()}`, // Use provided or generate default
         },
       });
 

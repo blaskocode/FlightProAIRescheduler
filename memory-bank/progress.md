@@ -346,6 +346,26 @@
   - **Problem**: `useAuth is not defined`, `setState during render` warnings
   - **Solution**: Added missing import, wrapped `fetchFlights` in `useCallback` with proper dependencies
   - **Location**: `src/components/dashboard/FlightList.tsx`
+- ✅ **React Hooks Order Violation**: 
+  - **Problem**: "Rendered fewer hooks than expected" error in FlightList component
+  - **Solution**: Moved `handleRefresh` useCallback hook before early return statement
+  - **Location**: `src/components/dashboard/FlightList.tsx`
+- ✅ **Instructor Account Sync Failure**: 
+  - **Problem**: Instructor sync failing with 500 error - missing required `certificateNumber` field
+  - **Solution**: Added default certificateNumber generation in sync-user endpoint (`CFI-{uid}` format)
+  - **Location**: `src/app/api/auth/sync-user/route.ts`
+- ✅ **Instructor Missing Flights**: 
+  - **Problem**: Instructor.demo account had no flights assigned after sync
+  - **Solution**: Assigned 5 upcoming flights to instructor.demo account
+  - **Location**: Database update via script
+- ✅ **Rescheduled Flight Display**: 
+  - **Problem**: Rescheduled flights showing as "RESCHEDULED" status instead of "CONFIRMED"
+  - **Solution**: Changed new flights to use CONFIRMED status with rescheduledFromId tracking, added "Rescheduled" badge in UI
+  - **Location**: `src/app/api/reschedule/[id]/accept/route.ts`, `src/components/dashboard/FlightCard.tsx`, `src/app/api/flights/route.ts`
+- ✅ **Student Flight Booking Missing**: 
+  - **Problem**: Students had permission to create flights but no UI to book them
+  - **Solution**: Created BookFlightModal component, instructors API endpoint, and "Book Flight" button on flights page
+  - **Location**: `src/components/flights/BookFlightModal.tsx`, `src/app/api/instructors/route.ts`, `src/app/flights/page.tsx`
 
 ### Code TODOs
 ✅ **All TODOs Completed**:

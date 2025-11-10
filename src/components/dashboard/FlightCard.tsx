@@ -54,17 +54,24 @@ export function FlightCard({
   const hasRoute = flight.route || (flight.departureAirport && flight.destinationAirport);
 
   const getStatusBadgeClass = (status: string) => {
-    if (status === 'CONFIRMED') return 'bg-aviation-green-100 text-aviation-green-700 border border-aviation-green-200';
-    if (status === 'PENDING') return 'bg-sky-100 text-sky-700 border border-sky-200';
-    if (status === 'RESCHEDULE_PENDING') return 'bg-amber-100 text-amber-700 border border-amber-200';
-    if (status === 'RESCHEDULE_CONFIRMED') return 'bg-sky-200 text-sky-800 border border-sky-300';
-    if (status === 'IN_PROGRESS') return 'bg-sky-200 text-sky-800 border border-sky-300';
-    if (status === 'COMPLETED') return 'bg-cloud-200 text-cloud-800 border border-cloud-300';
-    if (['WEATHER_CANCELLED', 'MAINTENANCE_CANCELLED', 'STUDENT_CANCELLED', 'INSTRUCTOR_CANCELLED'].includes(status)) {
+    // Treat RESCHEDULE_CONFIRMED as CONFIRMED (for backwards compatibility)
+    const displayStatus = status === 'RESCHEDULE_CONFIRMED' ? 'CONFIRMED' : status;
+    
+    if (displayStatus === 'CONFIRMED') return 'bg-aviation-green-100 text-aviation-green-700 border border-aviation-green-200';
+    if (displayStatus === 'PENDING') return 'bg-sky-100 text-sky-700 border border-sky-200';
+    if (displayStatus === 'RESCHEDULE_PENDING') return 'bg-amber-100 text-amber-700 border border-amber-200';
+    if (displayStatus === 'IN_PROGRESS') return 'bg-sky-200 text-sky-800 border border-sky-300';
+    if (displayStatus === 'COMPLETED') return 'bg-cloud-200 text-cloud-800 border border-cloud-300';
+    if (['WEATHER_CANCELLED', 'MAINTENANCE_CANCELLED', 'STUDENT_CANCELLED', 'INSTRUCTOR_CANCELLED'].includes(displayStatus)) {
       return 'bg-aviation-red-100 text-aviation-red-700 border border-aviation-red-200';
     }
-    if (status === 'RESCHEDULED') return 'bg-cloud-200 text-cloud-700 border border-cloud-300';
+    if (displayStatus === 'RESCHEDULED') return 'bg-cloud-200 text-cloud-700 border border-cloud-300';
     return 'bg-cloud-100 text-cloud-700 border border-cloud-200';
+  };
+
+  // Get display status (show CONFIRMED even if it was rescheduled)
+  const getDisplayStatus = (status: string) => {
+    return status === 'RESCHEDULE_CONFIRMED' ? 'CONFIRMED' : status;
   };
 
   const renderRescheduleButton = () => {
@@ -74,7 +81,7 @@ export function FlightCard({
       const hasPending = pendingReschedules.has(flight.id);
       
       // Show "View Reschedule Options" for cancelled flights with pending reschedule requests
-      if (flight.status === 'MAINTENANCE_CANCELLED' && hasPending && pendingReschedulesLoaded) {
+      if ((flight.status === 'MAINTENANCE_CANCELLED' || flight.status === 'WEATHER_CANCELLED') && hasPending && pendingReschedulesLoaded) {
         return (
           <Button
             onClick={() => onViewRescheduleOptions(flight.id)}
@@ -205,11 +212,18 @@ export function FlightCard({
         </div>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 pt-3 border-t border-cloud-200">
           <div className="flex flex-col gap-2">
-            <span
-              className={`rounded-full px-3 py-1.5 text-xs font-semibold self-start ${getStatusBadgeClass(flight.status)}`}
-            >
-              {flight.status.replace(/_/g, ' ')}
-            </span>
+            <div className="flex flex-col gap-1">
+              <span
+                className={`rounded-full px-3 py-1.5 text-xs font-semibold self-start ${getStatusBadgeClass(flight.status)}`}
+              >
+                {getDisplayStatus(flight.status).replace(/_/g, ' ')}
+              </span>
+              {(flight.rescheduledFromId || flight.status === 'RESCHEDULE_CONFIRMED') && (
+                <span className="text-xs text-sky-600 font-medium flex items-center gap-1 self-start">
+                  <span>🔄</span> Rescheduled
+                </span>
+              )}
+            </div>
             {flight.weatherOverride && (
               <span className="text-xs text-amber-600 font-medium flex items-center gap-1">
                 <span>⚠️</span> Weather Overridden

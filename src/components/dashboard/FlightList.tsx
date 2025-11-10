@@ -19,7 +19,11 @@ import { useFlightListReschedule } from './useFlightListReschedule';
 import { useFlightListFilters } from './useFlightListFilters';
 import { FlightCard } from './FlightCard';
 
-export function FlightList() {
+interface FlightListProps {
+  onFlightBooked?: () => void;
+}
+
+export function FlightList({ onFlightBooked }: FlightListProps = {}) {
   const { user, authUser, loading: authLoading } = useAuth();
   const [flights, setFlights] = useState<Flight[]>([]);
   const [loading, setLoading] = useState(true);
@@ -229,17 +233,15 @@ export function FlightList() {
     }
   }, [user, overrideFlightId, fetchFlights]);
 
+  const handleRefresh = useCallback(async () => {
+    await fetchFlights();
+    // Note: Weather alerts and pending reschedules are automatically refreshed
+    // by the useEffect in useFlightListReschedule hook
+  }, [fetchFlights]);
+
   if (error) {
     return <ErrorDisplay error={error} onRetry={fetchFlights} />;
   }
-
-  const handleRefresh = useCallback(async () => {
-    await fetchFlights();
-    // Also refresh weather alerts if needed
-    if (reschedule.fetchPendingReschedules) {
-      await reschedule.fetchPendingReschedules();
-    }
-  }, [fetchFlights, reschedule]);
 
   return (
     <PullToRefresh onRefresh={handleRefresh}>
